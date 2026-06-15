@@ -21,3 +21,10 @@ export const useExportPdf = () => {
       analysisApi.exportPdf(resumeData, templateName),
   });
 };
+
+export const useApplySuggestion = () => {
+  return useMutation({
+    mutationFn: ({ sectionName, sectionData, suggestion }: { sectionName: string; sectionData: any; suggestion: string }) => 
+      analysisApi.applySuggestion(sectionName, sectionData, suggestion),
+  });
+};

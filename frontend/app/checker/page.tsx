@@ -1,29 +1,69 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import styles from './checker.module.css';
 import builderStyles from '../builder/builder.module.css';
+import analysisStyles from '../builder/AnalysisPanel.module.css';
+import { useResumeStore } from '../../lib/store/resumeStore';
+import { useAtsScore, useCritique } from '../../lib/hooks/useAnalysis';
+import ClassicTemplate from '../../components/templates/ClassicTemplate';
+import ModernTemplate from '../../components/templates/ModernTemplate';
+import MinimalTemplate from '../../components/templates/MinimalTemplate';
+import AtsScoreView from '../../components/ai/AtsScoreView';
+import CritiqueFeedbackView from '../../components/ai/CritiqueFeedbackView';
 
 export default function CheckerPage() {
-  const [loadingComplete, setLoadingComplete] = useState(false);
+  const { resumeData, selectedTemplateId, fontSize, documentMargin, injectImprovement } = useResumeStore();
+  
+  const [jd, setJd] = useState('');
+  const [flowState, setFlowState] = useState<'idle' | 'loading' | 'scored' | 'feedback'>('idle');
+  
+  const atsMutation = useAtsScore();
+  const critiqueMutation = useCritique();
 
-  useEffect(() => {
-    // Simulate ATS analysis delay
-    const timer = setTimeout(() => {
-      setLoadingComplete(true);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+  const handleAnalyze = () => {
+    if (!jd.trim()) return;
+    setFlowState('loading');
+    atsMutation.mutate({ resumeData, jobDescription: jd }, {
+      onSuccess: () => {
+        setFlowState('scored');
+      },
+      onError: () => {
+        setFlowState('idle');
+      }
+    });
+  };
 
-  if (!loadingComplete) {
+  const handleGetFeedback = () => {
+    setFlowState('loading');
+    critiqueMutation.mutate(resumeData, {
+      onSuccess: () => {
+        setFlowState('feedback');
+      },
+      onError: () => {
+        setFlowState('scored');
+      }
+    });
+  };
+
+
+
+  if (flowState === 'loading') {
     return (
       <div className={styles.checkerTheme}>
-        <header className={styles.topNav}>
-          <div className={styles.brand}>Meridian</div>
-          <Link href="/builder" className={styles.exitBtn}>
-            Exit to builder
-          </Link>
+        <header className={builderStyles.saasTopNav}>
+          <div className={builderStyles.builderTopNav}>
+            <div className={builderStyles.builderBrand}>
+              <span className={builderStyles.brandWordmark}>Meridian</span>
+              <span className={builderStyles.brandCV}>Checker</span>
+            </div>
+          </div>
+          <div className={builderStyles.builderActions}>
+            <Link href="/builder" className={builderStyles.exportBtn}>
+              Return to Editor
+            </Link>
+          </div>
         </header>
 
         <main className={styles.mainContent}>
@@ -45,12 +85,35 @@ export default function CheckerPage() {
     );
   }
 
+  const atsResult = atsMutation.data;
+  const critiqueResult = critiqueMutation.data;
+
+  let highlightedSections: { section: string; marker: number }[] = [];
+  if (flowState === 'scored' && atsResult?.missing_keywords) {
+    highlightedSections = [
+      { section: 'Skills', marker: 1 },
+      { section: 'Experience', marker: 2 }
+    ];
+  } else if (flowState === 'feedback' && critiqueResult) {
+    highlightedSections = critiqueResult.sections.map((s, index) => {
+      let mappedSection = s.section.charAt(0).toUpperCase() + s.section.slice(1);
+      if (s.section === 'work') mappedSection = 'Experience';
+      if (s.section === 'education') mappedSection = 'Education';
+      if (s.section === 'basics') mappedSection = 'Summary';
+      return { section: mappedSection, marker: index + 1 };
+    });
+  }
+
   return (
     <div className={builderStyles.builderTheme}>
-      {/* Top Navbar */}
-      <header className={`${builderStyles.topNav} ${builderStyles.highlightTop}`}>
-        <div className={builderStyles.brand}>Meridian ATS Checker</div>
-        <div className={builderStyles.actions}>
+      <header className={builderStyles.saasTopNav}>
+        <div className={builderStyles.builderTopNav}>
+          <div className={builderStyles.builderBrand}>
+            <span className={builderStyles.brandWordmark}>Meridian</span>
+            <span className={builderStyles.brandCV}>Checker</span>
+          </div>
+        </div>
+        <div className={builderStyles.builderActions}>
           <Link href="/builder" className={builderStyles.exportBtn}>
             Return to Editor
           </Link>
@@ -58,98 +121,72 @@ export default function CheckerPage() {
       </header>
 
       <div className={builderStyles.layoutWrapper} style={{ paddingTop: '64px' }}>
-        {/* Full Width Layout: Center Canvas + Right Sidebar (No Left Sidebar) */}
         <main className={builderStyles.canvas} style={{ marginLeft: 0, marginRight: '340px' }}>
-          <div className={`${builderStyles.document} ${builderStyles.highlightTopLg}`}>
-            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-              <h1 className={builderStyles.docName}>Jordan Davis</h1>
-              <div className={builderStyles.docContact}>
-                <span>hello@jordandavis.design</span>
-                <span>•</span>
-                <span>+1 (555) 123-4567</span>
-                <span>•</span>
-                <span>San Francisco, CA</span>
-              </div>
-            </div>
-
-            {/* Example Highlighted Resume Section */}
-            <div style={{ marginBottom: '32px' }}>
-              <h2 className={builderStyles.docSectionTitle}>Experience</h2>
-              
-              <div className={builderStyles.feedbackCard} style={{ margin: '0 -24px', padding: '16px 24px', backgroundColor: 'transparent', border: 'none' }}>
-                <div className={builderStyles.jobHeader}>
-                  <h3 className={builderStyles.jobTitle}>Senior Product Designer</h3>
-                  <span className={builderStyles.jobDate}>Oct 2021 - Present</span>
-                </div>
-                <div className={builderStyles.jobCompany}>Acme Corp</div>
-                <ul className={builderStyles.jobBullets}>
-                  <li>Led the redesign of the core SaaS platform, improving task completion rate by 22%.</li>
-                </ul>
-              </div>
-
-              <div style={{ position: 'relative', margin: '16px -16px' }}>
-                {/* Highlight box */}
-                <div style={{ backgroundColor: 'rgba(218, 255, 239, 0.4)', borderLeft: '2px solid var(--b-primary)', padding: '16px', borderRadius: '0 8px 8px 0' }}>
-                   <div style={{ position: 'absolute', left: '-10px', top: '24px' }} className={builderStyles.feedbackMarker}>1</div>
-                   <div className={builderStyles.jobHeader}>
-                    <h3 className={builderStyles.jobTitle}>Product Designer</h3>
-                    <span className={builderStyles.jobDate}>Jan 2019 - Sep 2021</span>
-                  </div>
-                  <div className={builderStyles.jobCompany}>Credwork • Remote</div>
-                  <ul className={builderStyles.jobBullets}>
-                    <li>Designed the full UI/UX of the mobile app and built interactive prototypes.</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+          <div 
+            className={builderStyles.paperCard} 
+            style={{ 
+              transform: 'scale(0.8)', 
+              transformOrigin: 'top center',
+              '--doc-font-size': `${fontSize}pt`,
+              '--doc-margin': `${documentMargin * 48}px`
+            } as React.CSSProperties}
+          >
+            {selectedTemplateId === 'classic' && <ClassicTemplate highlightedSections={highlightedSections} />}
+            {selectedTemplateId === 'modern' && <ModernTemplate highlightedSections={highlightedSections} />}
+            {selectedTemplateId === 'minimal' && <MinimalTemplate highlightedSections={highlightedSections} />}
           </div>
         </main>
 
-        {/* Right Sidebar: Combined Scored + Feedback view */}
         <aside className={builderStyles.rightSidebar} style={{ width: '340px' }}>
-          <div className={builderStyles.analysisPanel} style={{ height: '100%', overflowY: 'auto', padding: '0', backgroundColor: 'transparent', border: 'none' }}>
+          <div className={builderStyles.analysisPanel} style={{ height: '100%', overflowY: 'auto', padding: '16px', backgroundColor: 'transparent', border: 'none' }}>
             
-            {/* ATS Score Header */}
-            <div style={{ padding: '0 0 24px 0', borderBottom: '1px solid var(--b-outline-variant)' }}>
-              <h3 className={builderStyles.panelTitle}>ATS Score</h3>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span className={builderStyles.atsScoreValue}>82</span>
-                <span className={builderStyles.atsScoreMax}>/100</span>
+            {flowState === 'idle' && (
+              <div className="flex flex-col gap-4">
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-ink)' }}>ATS Compatibility Check</h2>
+                <p style={{ fontSize: '14px', color: 'var(--color-ink-muted)' }}>Paste the job description you are targeting to see how well your resume matches.</p>
+                <div className={analysisStyles.targetJobCard} style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
+                  <label className={analysisStyles.targetJobLabel}>Job Description</label>
+                  <textarea 
+                    className={analysisStyles.jdTextarea}
+                    placeholder="Paste job description here..."
+                    value={jd}
+                    onChange={(e) => setJd(e.target.value)}
+                    rows={12}
+                  />
+                </div>
+                <button 
+                  onClick={handleAnalyze}
+                  className={analysisStyles.aiGenerateBtn}
+                  disabled={!jd.trim()}
+                  style={{ opacity: jd.trim() ? 1 : 0.5 }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>troubleshoot</span> 
+                  Check Match
+                </button>
               </div>
-              <p className={builderStyles.atsScoreText} style={{ marginBottom: 0, marginTop: '8px' }}>
-                Strong keyword coverage. Two sections could use more quantified results.
-              </p>
-            </div>
+            )}
 
-            {/* Feedback List */}
-            <div style={{ flex: 1, padding: '24px 0' }}>
-              <h3 className={builderStyles.panelTitle} style={{ marginBottom: '16px' }}>Detailed Feedback</h3>
-              
-              <div className={builderStyles.feedbackCard}>
-                <div className={builderStyles.feedbackCardIndicator}></div>
-                <div className={builderStyles.feedbackCardHeader}>
-                  <div className={builderStyles.feedbackMarker}>1</div>
-                  <div>
-                    <h4 className={builderStyles.feedbackCardTitle}>Experience — Credwork role</h4>
-                    <p className={builderStyles.feedbackCardDesc}>This bullet lacks a measurable result.</p>
-                  </div>
-                </div>
-                <div className={builderStyles.feedbackSuggestion}>
-                  <p className={builderStyles.feedbackSuggestionLabel}>Suggestion</p>
-                  <p className={builderStyles.feedbackSuggestionText}>&quot;Increased user retention by 15% through iterative interface refinements&quot;</p>
-                </div>
-              </div>
+            {(flowState === 'scored' || flowState === 'feedback') && atsResult && (
+              <div className="flex flex-col gap-4">
+                {flowState === 'scored' && (
+                  <AtsScoreView 
+                    atsResult={atsResult} 
+                    onGetFeedback={handleGetFeedback} 
+                    onReset={() => setFlowState('idle')} 
+                    isCheckerPage={true} 
+                  />
+                )}
 
-              {/* Missing Keywords */}
-              <div style={{ marginTop: '24px' }}>
-                <h4 className={builderStyles.panelSectionTitle} style={{ color: '#ba1a1a' }}>MISSING KEYWORDS</h4>
-                <div className={builderStyles.missingKeywordsWrapper}>
-                  <span className={builderStyles.keywordChip}>Docker</span>
-                  <span className={builderStyles.keywordChip}>CI/CD</span>
-                </div>
+                {flowState === 'feedback' && critiqueResult && (
+                  <CritiqueFeedbackView 
+                    critiqueResult={critiqueResult} 
+                    onBack={() => setFlowState('scored')} 
+                    onApplyImprovement={injectImprovement} 
+                  />
+                )}
               </div>
-            </div>
-            
+            )}
+
           </div>
         </aside>
       </div>

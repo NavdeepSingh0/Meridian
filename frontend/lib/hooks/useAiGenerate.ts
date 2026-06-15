@@ -1,10 +1,14 @@
 import { useState } from 'react';
 
 // Mock hook for generating inline content
-export function useAiGenerate() {
+export function useAiGenerate(sectionId?: string, context?: unknown, jobDescription?: string) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generate = async (promptType: 'summary' | 'bullet', context: any, jobDescription?: string): Promise<string> => {
+  const generate = async (
+    promptType: 'summary' | 'bullet',
+    _context?: unknown,
+    _jobDescription?: string
+  ): Promise<string> => {
     setIsGenerating(true);
     
     // Simulate API delay
@@ -18,6 +22,9 @@ export function useAiGenerate() {
       return "Spearheaded the development of scalable architectures, improving system performance by 40% and reducing operational costs.";
     }
   };
+
+  // Suppress unused variable warnings
+  void sectionId; void context; void jobDescription;
 
   return { generate, isGenerating };
 }

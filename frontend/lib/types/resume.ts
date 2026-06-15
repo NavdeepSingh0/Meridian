@@ -6,7 +6,7 @@ export interface Location {
 
 export interface Profile {
   network: string;
-  username: string;
+  username?: string;
   url: string;
 }
 
@@ -45,10 +45,13 @@ export interface Project {
   highlights: string[];
   keywords: string[];
   url: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface Skill {
   name: string;
+  level?: string;
   keywords: string[];
 }
 
@@ -59,6 +62,13 @@ export interface Certificate {
   url: string;
 }
 
+export interface Award {
+  title: string;
+  date: string;
+  awarder: string;
+  summary: string;
+}
+
 export interface ResumeData {
   basics: Basics;
   work: Work[];
@@ -67,7 +77,7 @@ export interface ResumeData {
   skills: Skill[];
   certificates: Certificate[];
   volunteer: unknown[];
-  awards: unknown[];
+  awards: Award[];
   publications: unknown[];
   languages: unknown[];
   interests: unknown[];

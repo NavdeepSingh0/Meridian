@@ -29,5 +29,16 @@ export const analysisApi = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  applySuggestion: async (sectionName: string, sectionData: any, suggestion: string): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/apply-suggestion/`, {
+      section_name: sectionName,
+      section_data: sectionData,
+      suggestion: suggestion,
+    });
+    // The backend returns { rewritten_section_json: "..." }
+    // We need to parse the JSON string back into an object/array
+    return JSON.parse(response.data.rewritten_section_json);
   }
 };

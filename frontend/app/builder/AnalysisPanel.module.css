@@ -250,6 +250,22 @@
   font-size: 16px;
 }
 
+.missingChip {
+  background: #DAFFEF;
+  color: #1C2B28;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .keywordItemText {
   font-family: var(--font-sans);
   font-size: 12px;

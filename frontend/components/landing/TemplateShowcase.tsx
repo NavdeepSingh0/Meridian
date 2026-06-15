@@ -5,16 +5,16 @@ import React from 'react';
 
 const templates = [
   {
-    name: 'Classic',
-    desc: 'Clean serif headings, strong section structure.',
-  },
-  {
     name: 'Modern',
     desc: 'Two-column layout with bold visual hierarchy.',
   },
   {
     name: 'Minimal',
     desc: 'Generous whitespace, understated and precise.',
+  },
+  {
+    name: 'Classic',
+    desc: 'Clean serif headings, strong section structure.',
   },
 ];
 
@@ -123,7 +123,7 @@ export default function TemplateShowcase() {
                 {/* Resume image */}
                 <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                   <Image
-                    src="/resume-placeholder.png"
+                    src={`/template-${templates[i].name.toLowerCase()}-v2.png`}
                     alt={`${templates[i].name} resume template preview`}
                     fill
                     style={{ objectFit: 'cover', objectPosition: 'top' }}

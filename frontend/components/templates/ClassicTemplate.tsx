@@ -11,50 +11,58 @@ interface ClassicTemplateProps {
   highlightedSections?: HighlightedSection[];
 }
 
+// ── Module-level sub-components (must not be defined inside render) ──────────
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{
+      fontSize: '0.65em',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '0.12em',
+      color: 'var(--color-primary)',
+      borderBottom: '1px solid var(--color-primary)',
+      paddingBottom: '0.3em',
+      marginBottom: '0.9em',
+      marginTop: 0,
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+function NumberMarker({ marker }: { marker: number }) {
+  return (
+    <div style={{
+      position: 'absolute', top: '-8px', left: '-10px',
+      width: '18px', height: '18px',
+      backgroundColor: 'var(--color-primary)', color: '#fff',
+      borderRadius: '50%', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', fontSize: '9px', fontWeight: 700, zIndex: 10,
+    }}>
+      {marker}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function ClassicTemplate({ highlightedSections = [] }: ClassicTemplateProps) {
   const { resumeData } = useResumeStore();
-  const { basics, work, education, projects, skills, certificates } = resumeData;
+  const { basics, work, education, projects, skills, certificates, awards } = resumeData;
 
-  // Helper to check if a section is highlighted
   const getHighlightProps = (sectionName: string) => {
     const highlight = highlightedSections.find(s => s.section === sectionName);
-    if (!highlight) return {};
-
+    if (!highlight) return { style: {}, marker: undefined };
     return {
       style: {
-        backgroundColor: 'var(--color-surface)', // #DAFFEF
-        borderLeft: '1.5px solid var(--color-primary)', // #64B6AC
-        position: 'relative' as const,
-        paddingLeft: '16px',
-        marginLeft: '-16px',
+        backgroundColor: 'rgba(100, 182, 172, 0.08)',
+        borderLeft: '2px solid var(--color-primary)',
+        paddingLeft: '0.9em',
+        marginLeft: '-0.9em',
         borderRadius: '0 4px 4px 0',
+        position: 'relative' as const,
       },
-      marker: highlight.marker
+      marker: highlight.marker,
     };
-  };
-
-  const renderMarker = (marker?: number) => {
-    if (!marker) return null;
-    return (
-      <div style={{
-        position: 'absolute',
-        top: '-10px',
-        left: '-10px',
-        width: '20px',
-        height: '20px',
-        backgroundColor: 'var(--color-primary)',
-        color: 'white',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '10px',
-        fontWeight: 'bold',
-        zIndex: 10
-      }}>
-        {marker}
-      </div>
-    );
   };
 
   const basicsProps = getHighlightProps('basics');
@@ -64,151 +72,198 @@ export default function ClassicTemplate({ highlightedSections = [] }: ClassicTem
   const skillsProps = getHighlightProps('skills');
   const certProps = getHighlightProps('certificates');
 
+  const profileStr = basics.profiles?.map(p => {
+    const clean = p.url.replace(/^https?:\/\//, '');
+    return `${p.network}: ${clean}`;
+  }).join('  ·  ');
+
   return (
-    <div className={`${styles.document} ${styles.highlightTopLg}`}>
-      <div style={{ textAlign: 'center', marginBottom: '40px', ...basicsProps.style }}>
-        {renderMarker(basicsProps.marker)}
-        <h1 className={styles.docName} style={{ color: basics.name ? 'inherit' : 'var(--color-ink-muted)' }}>
+    <div
+      className={styles.document}
+      style={{
+        padding: 'var(--doc-margin, 48px)',
+        fontSize: 'var(--doc-font-size, 10pt)',
+        fontFamily: 'var(--font-sans)',
+        color: '#1a1a1a',
+        lineHeight: 1.5,
+      }}
+    >
+      {/* ── Header ── */}
+      <div style={{ textAlign: 'center', marginBottom: '1.6em', ...basicsProps.style }}>
+        {basicsProps.marker && <NumberMarker marker={basicsProps.marker} />}
+        <h1 style={{
+          fontFamily: 'var(--font-serif)',
+          fontSize: '2.6em',
+          fontWeight: 700,
+          color: '#111',
+          margin: '0 0 0.15em',
+          lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+        }}>
           {basics.name || 'Your Name'}
         </h1>
+
         {basics.label && (
-          <p style={{ textAlign: 'center', fontSize: '14px', fontWeight: 500, color: 'var(--color-ink-muted)', marginBottom: '6px', marginTop: '-4px', fontStyle: 'italic' }}>
+          <p style={{ fontSize: '0.95em', color: '#555', margin: '0 0 0.6em', fontWeight: 400, fontStyle: 'italic' }}>
             {basics.label}
           </p>
         )}
-        <div className={styles.docContact}>
+
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', justifyContent: 'center',
+          gap: '0.3em 0.8em', fontSize: '0.8em', color: '#555',
+        }}>
           {basics.email && <span>{basics.email}</span>}
-          {basics.email && basics.phone && <span>•</span>}
+          {basics.email && basics.phone && <span style={{ color: '#bbb' }}>·</span>}
           {basics.phone && <span>{basics.phone}</span>}
-          {((basics.email || basics.phone) && basics.location?.city) && <span>•</span>}
-          {basics.location?.city && <span>{basics.location.city}{basics.location.region ? `, ${basics.location.region}` : ''}</span>}
-          {basics.profiles && basics.profiles.length > 0 && basics.profiles.map((profile, i) => (
-            <React.Fragment key={`profile-${i}`}>
-              <span>•</span>
-              <span>{profile.network}</span>
-            </React.Fragment>
-          ))}
+          {(basics.email || basics.phone) && basics.location?.city && <span style={{ color: '#bbb' }}>·</span>}
+          {basics.location?.city && (
+            <span>{basics.location.city}{basics.location.region ? `, ${basics.location.region}` : ''}</span>
+          )}
+          {profileStr && <span style={{ color: '#bbb' }}>·</span>}
+          {profileStr && <span>{profileStr}</span>}
         </div>
       </div>
 
+      {/* ── Summary ── */}
       {basics.summary && (
-        <div style={{ marginBottom: '32px' }}>
-          <h2 className={styles.docSectionTitle}>Summary</h2>
-          <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--color-ink)', margin: 0 }}>
+        <div style={{ marginBottom: '1.4em' }}>
+          <SectionTitle>Summary</SectionTitle>
+          <p style={{ fontSize: '0.9em', lineHeight: 1.65, color: '#333', margin: 0 }}>
             {basics.summary}
           </p>
         </div>
       )}
 
-      <div style={{ marginBottom: '32px', ...workProps.style }}>
-        {renderMarker(workProps.marker)}
-        <h2 className={styles.docSectionTitle}>Experience</h2>
-        
-        {work.length === 0 ? (
-          <p style={{ color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '14px' }}>
-            Your experience will appear here
-          </p>
-        ) : (
-          work.map((job, idx) => (
-            <div key={idx} className={styles.jobItem}>
-              <div className={styles.jobHeader}>
-                <h3 className={styles.jobTitle}>{job.position}</h3>
-                <span className={styles.jobDate}>{job.startDate} {job.startDate && job.endDate ? '-' : ''} {job.endDate}</span>
+      {/* ── Experience ── */}
+      {work.length > 0 && (
+        <div style={{ marginBottom: '1.4em', ...workProps.style }}>
+          {workProps.marker && <NumberMarker marker={workProps.marker} />}
+          <SectionTitle>Experience</SectionTitle>
+          {work.map((job, idx) => (
+            <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1.1em' : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.15em' }}>
+                <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{job.position}</h3>
+                <span style={{ fontSize: '0.78em', color: '#666', flexShrink: 0, marginLeft: '1em' }}>
+                  {job.startDate}{job.startDate && job.endDate ? ' – ' : ''}{job.endDate}
+                </span>
               </div>
-              <div className={styles.jobCompany}>{job.name}</div>
-              <ul className={styles.jobBullets}>
-                {job.highlights.map((h, i) => (
-                  <li key={i}>{h}</li>
-                ))}
-              </ul>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div style={{ marginBottom: '32px', ...eduProps.style }}>
-        {renderMarker(eduProps.marker)}
-        <h2 className={styles.docSectionTitle}>Education</h2>
-        
-        {education.length === 0 ? (
-          <p style={{ color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '14px' }}>
-            Your education will appear here
-          </p>
-        ) : (
-          education.map((edu, idx) => (
-            <div key={idx} style={{ marginBottom: '16px' }}>
-              <div className={styles.jobHeader}>
-                <h3 className={styles.jobTitle}>{edu.studyType} {edu.area}</h3>
-                <span className={styles.jobDate}>{edu.startDate} {edu.startDate && edu.endDate ? '-' : ''} {edu.endDate}</span>
+              <div style={{ fontSize: '0.85em', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic', marginBottom: '0.4em' }}>
+                {job.name}
               </div>
-              <div className={styles.jobCompany} style={{ color: 'var(--b-on-surface-variant)', fontStyle: 'normal' }}>
-                {edu.institution}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {projects.length > 0 && (
-        <div style={{ marginBottom: '32px', ...projectsProps.style }}>
-          {renderMarker(projectsProps.marker)}
-          <h2 className={styles.docSectionTitle}>Projects</h2>
-          {projects.map((proj, idx) => (
-            <div key={idx} className={styles.jobItem}>
-              <div className={styles.jobHeader}>
-                <h3 className={styles.jobTitle}>{proj.name}</h3>
-              </div>
-              <div className={styles.jobCompany}>{proj.url}</div>
-              <p style={{ fontSize: '14px', marginBottom: '4px' }}>{proj.description}</p>
-              <ul className={styles.jobBullets}>
-                {proj.highlights.map((h, i) => (
-                  <li key={i}>{h}</li>
-                ))}
-              </ul>
-              {proj.keywords.length > 0 && (
-                <p style={{ fontSize: '12px', color: 'var(--color-ink-muted)', marginTop: '4px' }}>
-                  <strong>Keywords:</strong> {proj.keywords.join(', ')}
-                </p>
+              {job.highlights.length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
+                  {job.highlights.map((h, i) => (
+                    <li key={i} style={{ marginBottom: '0.25em', lineHeight: 1.55 }}>{h}</li>
+                  ))}
+                </ul>
               )}
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ marginBottom: '32px', ...skillsProps.style }}>
-        {renderMarker(skillsProps.marker)}
-        <h2 className={styles.docSectionTitle}>Skills</h2>
-        
-        {skills.length === 0 ? (
-          <p style={{ color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '14px' }}>
-            Your skills will appear here
-          </p>
-        ) : (
-          <p className={styles.skillsText}>
-            {skills.map((skillGroup, idx) => (
-              <span key={idx}>
-                <strong>{skillGroup.name}:</strong> {skillGroup.keywords.join(', ')}<br/>
-              </span>
-            ))}
-          </p>
-        )}
-      </div>
-
-      {certificates.length > 0 && (
-        <div style={{ marginBottom: '32px', ...certProps.style }}>
-          {renderMarker(certProps.marker)}
-          <h2 className={styles.docSectionTitle}>Certificates</h2>
-          {certificates.map((cert, idx) => (
-            <div key={idx} style={{ marginBottom: '16px' }}>
-              <div className={styles.jobHeader}>
-                <h3 className={styles.jobTitle}>{cert.name}</h3>
-                <span className={styles.jobDate}>{cert.date}</span>
+      {/* ── Projects ── */}
+      {projects.length > 0 && (
+        <div style={{ marginBottom: '1.4em', ...projectsProps.style }}>
+          {projectsProps.marker && <NumberMarker marker={projectsProps.marker} />}
+          <SectionTitle>Projects</SectionTitle>
+          {projects.map((proj, idx) => (
+            <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1.1em' : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.15em' }}>
+                <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{proj.name}</h3>
+                {proj.endDate && (
+                  <span style={{ fontSize: '0.78em', color: '#666', flexShrink: 0, marginLeft: '1em' }}>{proj.endDate}</span>
+                )}
               </div>
-              <div className={styles.jobCompany} style={{ color: 'var(--b-on-surface-variant)', fontStyle: 'normal' }}>
-                {cert.issuer} {cert.url && <span>- <a href={cert.url} style={{ color: 'inherit', textDecoration: 'underline' }}>{cert.url}</a></span>}
+              {proj.description && (
+                <div style={{ fontSize: '0.82em', color: '#555', fontStyle: 'italic', marginBottom: '0.4em' }}>{proj.description}</div>
+              )}
+              {proj.url && (
+                <div style={{ fontSize: '0.78em', color: 'var(--color-primary)', marginBottom: '0.3em' }}>
+                  {proj.url.replace(/^https?:\/\//, '')}
+                </div>
+              )}
+              {proj.highlights.length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
+                  {proj.highlights.map((h, i) => (
+                    <li key={i} style={{ marginBottom: '0.25em', lineHeight: 1.55 }}>{h}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Education ── */}
+      {education.length > 0 && (
+        <div style={{ marginBottom: '1.4em', ...eduProps.style }}>
+          {eduProps.marker && <NumberMarker marker={eduProps.marker} />}
+          <SectionTitle>Education</SectionTitle>
+          {education.map((edu, idx) => (
+            <div key={idx} style={{ marginBottom: idx < education.length - 1 ? '0.8em' : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>
+                  {edu.studyType}{edu.studyType && edu.area ? ' ' : ''}{edu.area}
+                </h3>
+                <span style={{ fontSize: '0.78em', color: '#666', flexShrink: 0, marginLeft: '1em' }}>
+                  {edu.startDate}{edu.startDate && edu.endDate ? ' – ' : ''}{edu.endDate}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.85em', color: '#555', marginTop: '0.1em' }}>
+                {edu.institution}{edu.score ? ` · ${edu.score}` : ''}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Skills ── */}
+      {skills.length > 0 && (
+        <div style={{ marginBottom: '1.4em', ...skillsProps.style }}>
+          {skillsProps.marker && <NumberMarker marker={skillsProps.marker} />}
+          <SectionTitle>Skills</SectionTitle>
+          <div style={{ fontSize: '0.87em', lineHeight: 1.7, color: '#333' }}>
+            {skills.map((sg, idx) => (
+              <span key={idx}>
+                <strong style={{ color: '#111', fontWeight: 600 }}>{sg.name}: </strong>
+                {sg.keywords.join(', ')}
+                {idx < skills.length - 1 && '   '}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Certificates ── */}
+      {certificates.length > 0 && (
+        <div style={{ marginBottom: '1.4em', ...certProps.style }}>
+          {certProps.marker && <NumberMarker marker={certProps.marker} />}
+          <SectionTitle>Certifications</SectionTitle>
+          {certificates.map((cert, idx) => (
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: idx < certificates.length - 1 ? '0.5em' : 0 }}>
+              <div>
+                <span style={{ fontSize: '0.9em', fontWeight: 600, color: '#111' }}>{cert.name}</span>
+                {cert.issuer && <span style={{ fontSize: '0.82em', color: '#555' }}> · {cert.issuer}</span>}
+              </div>
+              {cert.date && <span style={{ fontSize: '0.78em', color: '#666', flexShrink: 0, marginLeft: '1em' }}>{cert.date}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Awards & Recognition ── */}
+      {awards.length > 0 && (
+        <div style={{ marginBottom: '1.4em' }}>
+          <SectionTitle>Awards &amp; Recognition</SectionTitle>
+          <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
+            {awards.map((award, idx) => (
+              <li key={idx} style={{ marginBottom: '0.35em', lineHeight: 1.55 }}>
+                {award.title}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

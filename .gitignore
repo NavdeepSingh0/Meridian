@@ -38,3 +38,17 @@ htmlcov/
 
 # Ruff
 .ruff_cache/
+
+# Local PDF files
+*.pdf
+
+# Local test/utility files
+backend/convert_modern.py
+backend/convert_pdfs.py
+backend/test_pdf.py
+backend/test_xhtml2pdf.py
+backend/check_models.py
+backend/check_models_http.py
+backend/test_modern_xhtml2pdf.pdf
+sample/
+

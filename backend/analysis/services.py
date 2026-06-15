@@ -68,35 +68,46 @@ def _call_gemini_and_parse(
     config = GenerateContentConfig(
         system_instruction=system_instruction,
         response_mime_type="application/json",
+        response_schema=response_schema,
         safety_settings=SAFETY_SETTINGS,
         temperature=0.2, # Low temp for structured extraction/evaluation
     )
     
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=user_message,
-            config=config,
-        )
-    except APIError as e:
-        code = getattr(e, "code", None)
-        if code == 429:
-            logger.warning(f"Gemini API rate limited (429): {getattr(e, 'message', str(e))}")
-            return None # Trigger mock fallback
-        elif code == 504:
-            logger.error("Gemini API timeout/504.")
+    max_retries = 3
+    base_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=user_message,
+                config=config,
+            )
+            break # Success, exit retry loop
+        except APIError as e:
+            code = getattr(e, "code", None)
+            if code in [503, 504, 429]:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    logger.warning(f"Gemini API {code} error. Retrying in {delay}s...")
+                    time.sleep(delay)
+                    continue
+                logger.error(f"Gemini API {code} error after {max_retries} attempts.")
+                raise TimeoutOrUnavailableError()
+            elif code == 400:
+                logger.error(f"Gemini API Bad Request (400): {getattr(e, 'message', str(e))}")
+                raise BadRequestError()
+            else:
+                logger.error(f"Unknown Gemini API Error {code}: {str(e)}")
+                raise TimeoutOrUnavailableError()
+        except Exception as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"Network timeout or unexpected error: {str(e)}. Retrying in {delay}s...")
+                time.sleep(delay)
+                continue
+            logger.error(f"Network timeout or unexpected error calling Gemini: {str(e)}")
             raise TimeoutOrUnavailableError()
-        elif code == 400:
-            logger.error(f"Gemini API Bad Request (400): {getattr(e, 'message', str(e))}")
-            raise BadRequestError()
-        else:
-            # Re-raise unknown APIErrors, or perhaps treat as 503
-            logger.error(f"Unknown Gemini API Error {code}: {str(e)}")
-            raise TimeoutOrUnavailableError()
-    except Exception as e:
-        # Catch standard requests/SDK timeouts
-        logger.error(f"Network timeout or unexpected error calling Gemini: {str(e)}")
-        raise TimeoutOrUnavailableError()
 
     # 1. Check finish_reason for Safety block
     if not response.candidates:
@@ -174,24 +185,63 @@ def compute_ats_score(resume_data: dict[str, Any], job_description: Optional[str
     return result
 
 
+def apply_suggestion(section_name: str, section_data: Any, suggestion: str) -> str:
+    """
+    Rewrite a resume section to incorporate a constructive suggestion.
+    Returns the raw rewritten JSON string.
+    """
+    if is_demo_mode():
+        time.sleep(1.5)
+        # Just return the input data unmodified in demo mode as fallback
+        return json.dumps(section_data)
+
+    from analysis.prompts import APPLY_SUGGESTION_SYSTEM_PROMPT, build_apply_suggestion_user_message
+    from analysis.schemas import ApplySuggestionResult
+
+    user_message = build_apply_suggestion_user_message(section_name, section_data, suggestion)
+    
+    result = _call_gemini_and_parse(
+        system_instruction=APPLY_SUGGESTION_SYSTEM_PROMPT,
+        user_message=user_message,
+        response_schema=ApplySuggestionResult
+    )
+    
+    if result is None:
+        # Fallback
+        return json.dumps(section_data)
+        
+    return result.rewritten_section_json
+
+
+
+
 def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
     """
     Renders the given resume data into a PDF byte string.
     Uses Django's template engine to render HTML, then WeasyPrint to create PDF.
+    Falls back to xhtml2pdf if WeasyPrint/GTK3 is unavailable.
     """
-    try:
-        from weasyprint import HTML
-    except (ImportError, OSError):
-        # Fallback if WeasyPrint or GTK3 isn't available
-        raise NotImplementedError("WeasyPrint or its system dependencies (GTK3) are not installed.")
-        
     from django.template.loader import render_to_string
     
     # Render the appropriate template
     template_name = f"analysis/pdf/{template_id}.html"
-    
     html_string = render_to_string(template_name, {"resume": resume_data})
     
-    # Generate the PDF bytes
-    pdf_bytes = HTML(string=html_string).write_pdf()
-    return pdf_bytes
+    try:
+        from weasyprint import HTML
+        # Generate the PDF bytes
+        pdf_bytes = HTML(string=html_string).write_pdf()
+        return pdf_bytes
+    except (ImportError, OSError):
+        # Fallback if WeasyPrint or GTK3 isn't available
+        try:
+            from xhtml2pdf import pisa
+            import io
+            result = io.BytesIO()
+            pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("utf-8")), result)
+            if not pdf.err:
+                return result.getvalue()
+            else:
+                raise Exception(f"xhtml2pdf error: {pdf.err}")
+        except ImportError:
+            raise NotImplementedError("WeasyPrint or its system dependencies (GTK3) are not installed, and xhtml2pdf fallback is not installed.")

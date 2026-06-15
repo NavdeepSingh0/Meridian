@@ -97,6 +97,31 @@ class ATSScoreView(APIView):
         return Response(result.model_dump(), status=status.HTTP_200_OK)
 
 
+class ApplySuggestionView(APIView):
+    """
+    POST /api/analysis/apply-suggestion/
+    Body: { "section_name": "...", "section_data": ..., "suggestion": "..." }
+    """
+
+    def post(self, request, *args, **kwargs):
+        section_name = request.data.get("section_name")
+        section_data = request.data.get("section_data")
+        suggestion = request.data.get("suggestion")
+        
+        if not section_name or section_data is None or not suggestion:
+            return Response({"error": "section_name, section_data, and suggestion are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Returns a raw JSON string
+            rewritten_json_str = services.apply_suggestion(section_name, section_data, suggestion)
+            return Response({"rewritten_section_json": rewritten_json_str}, status=status.HTTP_200_OK)
+        except Exception as exc:
+            err_response = _handle_service_errors(exc)
+            if err_response:
+                return err_response
+            raise
+
+
 class ExportPDFView(APIView):
     """
     POST /api/analysis/export-pdf/
@@ -133,4 +158,6 @@ class ExportPDFView(APIView):
         except NotImplementedError as e:
             return Response({"detail": str(e)}, status=status.HTTP_501_NOT_IMPLEMENTED)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({"detail": f"An error occurred while generating the PDF: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

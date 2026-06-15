@@ -1,22 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useResumeStore } from '../../lib/store/resumeStore';
+import { useExportPdf } from '../../lib/hooks/useAnalysis';
+import { useSaveResume } from '../../lib/hooks/useResumes';
 import styles from '../../app/builder/builder.module.css';
 
 interface TopNavProps {
-  onExport: () => void;
   activeTemplate: string;
   setActiveTemplate: (t: string) => void;
   documentName: string;
   setDocumentName: (name: string) => void;
 }
 
-export default function TopNav({ onExport, activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
+export default function TopNav({ activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { resumeData } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
+  const exportPdfMutation = useExportPdf();
+  const saveResumeMutation = useSaveResume();
+
+  const handleExportClick = () => {
+    exportPdfMutation.mutate({ resumeData, templateName: activeTemplate }, {
+      onSuccess: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${documentName || 'resume'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      },
+      onError: (err) => {
+        console.error("Export failed", err);
+        alert("Failed to export PDF. Please try again.");
+      }
+    });
+  };
+
+  const handleSaveToCloud = () => {
+    saveResumeMutation.mutate({
+      title: documentName || 'My Resume',
+      template_id: activeTemplate,
+      document_data: resumeData
+    }, {
+      onSuccess: () => {
+        alert("Successfully saved to cloud database!");
+      },
+      onError: (err) => {
+        console.error("Save failed", err);
+        alert("Failed to save to cloud database.");
+      }
+    });
+  };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaveState('saving');
     const timer = setTimeout(() => {
       setSaveState('saved');
@@ -132,11 +171,39 @@ export default function TopNav({ onExport, activeTemplate, setActiveTemplate, do
         </div>
 
         <button
-          onClick={onExport}
-          className="btn-primary-nav" style={{ padding: '6px 14px' }}
+          onClick={handleSaveToCloud}
+          disabled={saveResumeMutation.isPending}
+          className="btn-secondary-nav" style={{ padding: '6px 14px', opacity: saveResumeMutation.isPending ? 0.7 : 1 }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
-          Export
+          {saveResumeMutation.isPending ? (
+            <>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px', animation: 'spin 1s linear infinite' }}>refresh</span>
+              Saving...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>cloud_upload</span>
+              Save to Cloud
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={handleExportClick}
+          disabled={exportPdfMutation.isPending}
+          className="btn-primary-nav" style={{ padding: '6px 14px', opacity: exportPdfMutation.isPending ? 0.7 : 1 }}
+        >
+          {exportPdfMutation.isPending ? (
+            <>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px', animation: 'spin 1s linear infinite' }}>refresh</span>
+              Exporting...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
+              Export
+            </>
+          )}
         </button>
       </div>
     </header>

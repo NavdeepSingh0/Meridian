@@ -10,6 +10,7 @@ import ProjectsForm from './forms/ProjectsForm';
 import CertificatesForm from './forms/CertificatesForm';
 
 import { useResumeStore } from '../../lib/store/resumeStore';
+import { mockResumes } from '../../lib/store/mockResumes';
 
 // Icon map for optional custom sections
 const CUSTOM_SECTION_ICONS: Record<string, string> = {
@@ -45,7 +46,7 @@ interface LeftSidebarProps {
 }
 
 export default function LeftSidebar({ activeSection, setActiveSection, isLocked = false }: LeftSidebarProps) {
-  const { selectedTemplateId, setSelectedTemplateId } = useResumeStore();
+  const { selectedTemplateId, setSelectedTemplateId, fontSize, setFontSize, documentMargin, setDocumentMargin } = useResumeStore();
   const [activeTab, setActiveTab] = useState<'editor' | 'layout' | 'ai'>('editor');
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -240,15 +241,47 @@ export default function LeftSidebar({ activeSection, setActiveSection, isLocked 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink-muted)' }}>Font Size</span>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)' }}>10pt</span>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)' }}>{fontSize}pt</span>
               </div>
-              <input type="range" min="9" max="12" step="0.5" defaultValue="10" style={{ width: '100%', accentColor: 'var(--color-primary)' }} />
+              <input 
+                type="range" min="9" max="12" step="0.5" 
+                value={fontSize}
+                onChange={(e) => setFontSize(parseFloat(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--color-primary)' }} 
+              />
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink-muted)' }}>Document Margins</span>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)' }}>Normal</span>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)' }}>{documentMargin === 1 ? 'Normal' : documentMargin + 'x'}</span>
               </div>
-              <input type="range" min="0.5" max="1.5" step="0.1" defaultValue="1" style={{ width: '100%', accentColor: 'var(--color-primary)' }} />
+              <input 
+                type="range" min="0.5" max="1.5" step="0.1" 
+                value={documentMargin}
+                onChange={(e) => setDocumentMargin(parseFloat(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--color-primary)' }} 
+              />
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)', marginTop: '32px', marginBottom: '16px' }}>Load Demo Data</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button 
+                onClick={() => useResumeStore.setState({ resumeData: mockResumes.softwareEngineer })}
+                style={{ padding: '10px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '13px', textAlign: 'left', color: 'var(--color-ink)', fontWeight: 600 }}
+              >
+                👨‍💻 Software Engineer
+              </button>
+              <button 
+                onClick={() => useResumeStore.setState({ resumeData: mockResumes.designer })}
+                style={{ padding: '10px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '13px', textAlign: 'left', color: 'var(--color-ink)', fontWeight: 600 }}
+              >
+                🎨 UI/UX Designer
+              </button>
+              <button 
+                onClick={() => useResumeStore.setState({ resumeData: mockResumes.productManager })}
+                style={{ padding: '10px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '13px', textAlign: 'left', color: 'var(--color-ink)', fontWeight: 600 }}
+              >
+                📊 Product Manager
+              </button>
             </div>
           </div>
         )}

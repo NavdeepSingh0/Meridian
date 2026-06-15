@@ -87,3 +87,4 @@ REST_FRAMEWORK = {
 
 # Gemini API key — read from environment. Empty string = Demo Mode.
 GEMINI_API_KEY: str = env("GEMINI_API_KEY")
+# Trigger auto-reloader to pick up the new .env file

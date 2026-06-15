@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from './builder.module.css';
 import ClassicTemplate from '../../components/templates/ClassicTemplate';
+import ModernTemplate from '../../components/templates/ModernTemplate';
+import MinimalTemplate from '../../components/templates/MinimalTemplate';
 import LeftSidebar from '../../components/editor/LeftSidebar';
 import AnalysisPanel from '../../components/ai/AnalysisPanel';
 import TopNav from '../../components/editor/TopNav';
@@ -15,17 +17,16 @@ interface HighlightedSection {
 
 export default function BuilderPage() {
   const [activeSection, setActiveSection] = useState<string>('Basics');
-  const [activeTemplate, setActiveTemplate] = useState('classic');
   const [documentName, setDocumentName] = useState('');
   const [zoom, setZoom] = useState(100);
   const [isClient, setIsClient] = useState(false);
   const canvasRef = React.useRef<HTMLElement>(null);
   
-  const { panelState, atsResult, critiqueResult } = useResumeStore();
+  const { panelState, atsResult, critiqueResult, selectedTemplateId, setSelectedTemplateId, fontSize, documentMargin } = useResumeStore();
   const isMutating = useIsMutating();
 
   useEffect(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
     
     const handleNativeWheel = (e: WheelEvent) => {
@@ -62,12 +63,7 @@ export default function BuilderPage() {
     });
   }
 
-  const handleExport = () => {
-    const originalTitle = document.title;
-    document.title = documentName || 'Resume';
-    window.print();
-    document.title = originalTitle;
-  };
+
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 200));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 20));
@@ -87,9 +83,8 @@ export default function BuilderPage() {
   return (
     <div className={styles.builderTheme}>
       <TopNav 
-        onExport={handleExport}
-        activeTemplate={activeTemplate}
-        setActiveTemplate={setActiveTemplate}
+        activeTemplate={selectedTemplateId}
+        setActiveTemplate={setSelectedTemplateId}
         documentName={documentName}
         setDocumentName={setDocumentName}
       />
@@ -101,9 +96,20 @@ export default function BuilderPage() {
           isLocked={isLocked}
         />
 
-        <main ref={canvasRef} className={styles.saasMainCanvas} style={{ opacity: isLocked ? 0.5 : 1, pointerEvents: isLocked ? 'none' : 'auto', transition: 'all 0.3s ease' }}>
-          <div className={styles.paperCard} style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.1s ease' }}>
-            <ClassicTemplate highlightedSections={highlightedSections} />
+        <main ref={canvasRef} className={styles.saasMainCanvas} style={{ pointerEvents: isLocked ? 'none' : 'auto', transition: 'all 0.3s ease' }}>
+          <div 
+            className={styles.paperCard} 
+            style={{ 
+              transform: `scale(${zoom / 100})`, 
+              transformOrigin: 'top center', 
+              transition: 'transform 0.1s ease',
+              '--doc-font-size': `${fontSize}pt`,
+              '--doc-margin': `${documentMargin * 48}px`
+            } as React.CSSProperties}
+          >
+            {selectedTemplateId === 'classic' && <ClassicTemplate highlightedSections={highlightedSections} />}
+            {selectedTemplateId === 'modern' && <ModernTemplate highlightedSections={highlightedSections} />}
+            {selectedTemplateId === 'minimal' && <MinimalTemplate highlightedSections={highlightedSections} />}
           </div>
 
           <div className={styles.floatingToolbar}>

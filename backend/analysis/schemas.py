@@ -39,3 +39,9 @@ class ATSResult(BaseModel):
     has_job_description: bool
     # Empty list if has_job_description is false
     missing_keywords: list[KeywordGap] = Field(description="Empty list if has_job_description is false")
+
+
+# --- Smart Apply Suggestion ---
+
+class ApplySuggestionResult(BaseModel):
+    rewritten_section_json: str = Field(description="The rewritten section data as a serialized JSON string. Do NOT wrap in markdown fences.")
