@@ -437,10 +437,17 @@
   margin-bottom: 0;
 }
 
+.feedbackSuggestion {
+  margin-left: 28px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
 .feedbackSuggestionLabel {
   font-family: var(--font-sans);
   font-size: 11px;
-  color: var(--color-primary);
+  color: #e07a5f;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 8px;

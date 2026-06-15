@@ -6,7 +6,7 @@ interface EditorFormProps {
 }
 
 export default function EditorForm({ activeSection }: EditorFormProps) {
-  const { data, setBasics } = useResumeStore();
+  const { resumeData, updateBasics } = useResumeStore();
 
   if (activeSection === 'Basics') {
     return (
@@ -17,8 +17,8 @@ export default function EditorForm({ activeSection }: EditorFormProps) {
             Name
             <input 
               type="text" 
-              value={data.basics.name} 
-              onChange={(e) => setBasics({ ...data.basics, name: e.target.value })}
+              value={resumeData.basics.name} 
+              onChange={(e) => updateBasics('name', e.target.value)}
               style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-on-surface)' }}
             />
           </label>
@@ -26,8 +26,8 @@ export default function EditorForm({ activeSection }: EditorFormProps) {
             Email
             <input 
               type="text" 
-              value={data.basics.email} 
-              onChange={(e) => setBasics({ ...data.basics, email: e.target.value })}
+              value={resumeData.basics.email} 
+              onChange={(e) => updateBasics('email', e.target.value)}
               style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-on-surface)' }}
             />
           </label>
