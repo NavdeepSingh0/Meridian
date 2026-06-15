@@ -1,36 +1,21 @@
 import axios from 'axios';
 import { ResumeData } from '../types/resume';
+import { ATSResult, CritiqueResult } from '../types/analysis';
 
 // We assume the Django backend is running on 8000
 const API_BASE_URL = 'http://localhost:8000/api/analysis';
 
-export interface CritiqueResponse {
-  feedback: {
-    strengths: string[];
-    issues: Array<{
-      section: string;
-      issue: string;
-      suggestion: string;
-    }>;
-  };
-}
-
-export interface AtsScoreResponse {
-  score: number;
-  keyword_matches: string[];
-  missing_keywords: string[];
-  feedback: string;
-}
-
 export const analysisApi = {
-  critique: async (data: ResumeData): Promise<CritiqueResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/critique/`, data);
+  critique: async (data: ResumeData): Promise<CritiqueResult> => {
+    const response = await axios.post(`${API_BASE_URL}/critique/`, {
+      resume_data: data
+    });
     return response.data;
   },
 
-  atsScore: async (data: ResumeData, jobDescription: string): Promise<AtsScoreResponse> => {
+  atsScore: async (data: ResumeData, jobDescription: string): Promise<ATSResult> => {
     const response = await axios.post(`${API_BASE_URL}/ats-score/`, {
-      resume: data,
+      resume_data: data,
       job_description: jobDescription,
     });
     return response.data;
@@ -38,8 +23,8 @@ export const analysisApi = {
 
   exportPdf: async (data: ResumeData, templateName: string = 'classic'): Promise<Blob> => {
     const response = await axios.post(`${API_BASE_URL}/export-pdf/`, {
-      resume: data,
-      template_name: templateName,
+      resume_data: data,
+      template_id: templateName,
     }, {
       responseType: 'blob'
     });

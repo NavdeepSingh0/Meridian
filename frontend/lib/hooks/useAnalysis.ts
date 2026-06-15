@@ -4,20 +4,20 @@ import { ResumeData } from '../types/resume';
 
 export const useCritique = () => {
   return useMutation({
-    mutationFn: (data: ResumeData) => analysisApi.critique(data),
+    mutationFn: (resumeData: ResumeData) => analysisApi.critique(resumeData),
   });
 };
 
 export const useAtsScore = () => {
   return useMutation({
-    mutationFn: ({ resume, jobDescription }: { resume: ResumeData; jobDescription: string }) => 
-      analysisApi.atsScore(resume, jobDescription),
+    mutationFn: ({ resumeData, jobDescription }: { resumeData: ResumeData; jobDescription: string }) => 
+      analysisApi.atsScore(resumeData, jobDescription),
   });
 };
 
 export const useExportPdf = () => {
   return useMutation({
-    mutationFn: ({ resume, templateName }: { resume: ResumeData; templateName: string }) => 
-      analysisApi.exportPdf(resume, templateName),
+    mutationFn: ({ resumeData, templateName }: { resumeData: ResumeData; templateName: string }) => 
+      analysisApi.exportPdf(resumeData, templateName),
   });
 };

@@ -66,10 +66,10 @@ export interface ResumeData {
   projects: Project[];
   skills: Skill[];
   certificates: Certificate[];
-  volunteer: any[];
-  awards: any[];
-  publications: any[];
-  languages: any[];
-  interests: any[];
-  references: any[];
+  volunteer: unknown[];
+  awards: unknown[];
+  publications: unknown[];
+  languages: unknown[];
+  interests: unknown[];
+  references: unknown[];
 }
