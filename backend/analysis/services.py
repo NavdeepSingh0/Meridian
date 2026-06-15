@@ -1,0 +1,197 @@
+"""
+Service layer for AI analysis and PDF rendering.
+
+Integrates with the `google-genai` client, implementing the full defensive
+parsing pipeline, error handling hierarchy, and fallback to mock data
+described in ARCHITECTURE.md §8.6 and §8.7.
+"""
+import time
+import json
+import logging
+from typing import Any, Optional, TypeVar, Type
+
+from pydantic import BaseModel, ValidationError
+from google.genai.errors import APIError
+from google.genai.types import GenerateContentConfig
+
+from analysis.schemas import CritiqueResult, ATSResult
+from analysis.mock_data import get_mock_critique, get_mock_ats_result
+from analysis.gemini_client import client, is_demo_mode, SAFETY_SETTINGS
+from analysis.prompts import (
+    CRITIQUE_SYSTEM_PROMPT,
+    ATS_SYSTEM_PROMPT,
+    build_critique_user_message,
+    build_ats_user_message,
+)
+
+
+logger = logging.getLogger(__name__)
+
+T = TypeVar("T", bound=BaseModel)
+
+class SafetyError(Exception):
+    """Raised when Gemini blocks content due to safety filters (422)."""
+    pass
+
+class TimeoutOrUnavailableError(Exception):
+    """Raised when Gemini returns 504 or times out (503)."""
+    pass
+
+class BadRequestError(Exception):
+    """Raised when Gemini returns a 400 error (500)."""
+    pass
+
+def _clean_json_string(raw_text: str) -> str:
+    """Strip markdown code fences from Gemini output."""
+    text = raw_text.strip()
+    if text.startswith("```json"):
+        text = text[len("```json"):]
+    elif text.startswith("```"):
+        text = text[len("```"):]
+    
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
+
+
+def _call_gemini_and_parse(
+    system_instruction: str, 
+    user_message: str, 
+    response_schema: Type[T]
+) -> T | None:
+    """
+    Core defensive pipeline for calling Gemini and parsing structured output.
+    Returns the parsed Pydantic model on success.
+    Returns None on conditions that should trigger a mock fallback (429, parse failure).
+    Raises specific Exceptions for conditions that should surface to the frontend (Safety, 504, 400).
+    """
+    config = GenerateContentConfig(
+        system_instruction=system_instruction,
+        response_mime_type="application/json",
+        safety_settings=SAFETY_SETTINGS,
+        temperature=0.2, # Low temp for structured extraction/evaluation
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=user_message,
+            config=config,
+        )
+    except APIError as e:
+        code = getattr(e, "code", None)
+        if code == 429:
+            logger.warning(f"Gemini API rate limited (429): {getattr(e, 'message', str(e))}")
+            return None # Trigger mock fallback
+        elif code == 504:
+            logger.error("Gemini API timeout/504.")
+            raise TimeoutOrUnavailableError()
+        elif code == 400:
+            logger.error(f"Gemini API Bad Request (400): {getattr(e, 'message', str(e))}")
+            raise BadRequestError()
+        else:
+            # Re-raise unknown APIErrors, or perhaps treat as 503
+            logger.error(f"Unknown Gemini API Error {code}: {str(e)}")
+            raise TimeoutOrUnavailableError()
+    except Exception as e:
+        # Catch standard requests/SDK timeouts
+        logger.error(f"Network timeout or unexpected error calling Gemini: {str(e)}")
+        raise TimeoutOrUnavailableError()
+
+    # 1. Check finish_reason for Safety block
+    if not response.candidates:
+        logger.error("Gemini returned no candidates.")
+        return None # Fallback
+        
+    candidate = response.candidates[0]
+    finish_reason = getattr(candidate, "finish_reason", None)
+    
+    # In google-genai, finish_reason is an enum or string. Check string representation.
+    if str(finish_reason) == "SAFETY" or str(finish_reason) == "FinishReason.SAFETY":
+        raise SafetyError("Content flagged by safety filters")
+
+    # 2. Extract text and strip markdown
+    raw_text = response.text
+    if not raw_text:
+        logger.error("Gemini returned empty text despite no safety block.")
+        return None
+        
+    cleaned_text = _clean_json_string(raw_text)
+    
+    # 3. Parse JSON and validate with Pydantic
+    try:
+        parsed_dict = json.loads(cleaned_text)
+        validated_model = response_schema.model_validate(parsed_dict)
+        return validated_model
+    except (json.JSONDecodeError, ValidationError) as e:
+        logger.error(f"Failed to parse or validate Gemini output: {str(e)}\nRaw output: {raw_text}")
+        return None # Trigger mock fallback
+
+
+def generate_critique(resume_data: dict[str, Any]) -> CritiqueResult:
+    """
+    Generate an AI critique for the provided resume.
+    """
+    if is_demo_mode():
+        time.sleep(1.5)
+        return get_mock_critique()
+
+    user_message = build_critique_user_message(resume_data)
+    
+    result = _call_gemini_and_parse(
+        system_instruction=CRITIQUE_SYSTEM_PROMPT,
+        user_message=user_message,
+        response_schema=CritiqueResult
+    )
+    
+    if result is None:
+        # Fallback due to 429 or parse failure
+        return get_mock_critique()
+        
+    return result
+
+
+def compute_ats_score(resume_data: dict[str, Any], job_description: Optional[str] = None) -> ATSResult:
+    """
+    Compute an ATS compatibility score, optionally diffing against a JD.
+    """
+    if is_demo_mode():
+        time.sleep(1.5)
+        return get_mock_ats_result(has_job_description=bool(job_description))
+
+    user_message = build_ats_user_message(resume_data, job_description)
+    
+    result = _call_gemini_and_parse(
+        system_instruction=ATS_SYSTEM_PROMPT,
+        user_message=user_message,
+        response_schema=ATSResult
+    )
+    
+    if result is None:
+        # Fallback due to 429 or parse failure
+        return get_mock_ats_result(has_job_description=bool(job_description))
+        
+    return result
+
+
+def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
+    """
+    Renders the given resume data into a PDF byte string.
+    Uses Django's template engine to render HTML, then WeasyPrint to create PDF.
+    """
+    try:
+        from weasyprint import HTML
+    except (ImportError, OSError):
+        # Fallback if WeasyPrint or GTK3 isn't available
+        raise NotImplementedError("WeasyPrint or its system dependencies (GTK3) are not installed.")
+        
+    from django.template.loader import render_to_string
+    
+    # Render the appropriate template
+    template_name = f"analysis/pdf/{template_id}.html"
+    
+    html_string = render_to_string(template_name, {"resume": resume_data})
+    
+    # Generate the PDF bytes
+    pdf_bytes = HTML(string=html_string).write_pdf()
+    return pdf_bytes
