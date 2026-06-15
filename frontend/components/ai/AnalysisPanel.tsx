@@ -110,6 +110,17 @@ export default function AnalysisPanel() {
 
             {(panelState === 'scored' || panelState === 'feedback') && atsResult && (
               <>
+                <div className={styles.atsScoreHeader}>
+                  <p className={styles.atsScoreLabel}>ATS Score</p>
+                  <div className={styles.atsScoreDisplay}>
+                    <span className={styles.atsScoreNumber}>{atsResult.overall_score}</span>
+                    <span className={styles.atsScoreMax}>/100</span>
+                  </div>
+                  {atsResult.summary && (
+                    <p className={styles.atsSummaryText}>{atsResult.summary}</p>
+                  )}
+                </div>
+
                 <div className={styles.targetJobCard}>
                   <div className={styles.targetJobIcon}>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cases</span>
@@ -190,19 +201,57 @@ export default function AnalysisPanel() {
                   </div>
                 </div>
 
+                {atsResult.strengths && atsResult.strengths.length > 0 && (
+                  <div className={styles.scoredSubSection}>
+                    <p className={styles.scoredSubLabel}>Strengths</p>
+                    <div className={styles.scoredBulletList}>
+                      {atsResult.strengths.map((s, i) => (
+                        <div key={i} className={styles.scoredBulletItem}>
+                          <span className={`material-symbols-outlined ${styles.scoredBulletIcon}`}>check_circle</span>
+                          <span>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {atsResult.issues && atsResult.issues.length > 0 && (
+                  <div className={styles.scoredSubSection}>
+                    <p className={`${styles.scoredSubLabel} ${styles.issuesLabel}`}>Issues</p>
+                    <div className={styles.scoredBulletList}>
+                      {atsResult.issues.map((issue, i) => (
+                        <div key={i} className={`${styles.scoredBulletItem} ${styles.issueBulletItem}`}>
+                          <span className={`material-symbols-outlined ${styles.issueBulletIcon}`}>warning</span>
+                          <span>{issue}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-2 mt-2">
                   {panelState === 'scored' ? (
-                    <button 
-                      className={styles.actionBtnPrimary}
-                      onClick={handleGetFeedback}
-                    >
-                      Get Detailed Critique
-                    </button>
+                    <>
+                      <button 
+                        className={styles.actionBtnPrimary}
+                        onClick={handleGetFeedback}
+                      >
+                        Get Detailed Critique
+                      </button>
+                      <button 
+                        className={styles.actionBtnOutline}
+                        onClick={resetToEditing}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
+                        Edit Resume
+                      </button>
+                    </>
                   ) : (
                     <button 
                       className={styles.actionBtnOutline}
                       onClick={resetToEditing}
                     >
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       Clear Analysis & Edit
                     </button>
                   )}
@@ -210,7 +259,12 @@ export default function AnalysisPanel() {
 
                 {panelState === 'feedback' && critiqueResult && (
                   <div className="flex flex-col gap-3 mt-4">
-                    <h3 className="text-[13px] font-bold text-gray-800 px-1">Detailed Critique</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px', marginBottom: '4px' }}>
+                      <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Detailed Critique</h3>
+                      <button className={styles.backToScoreBtn} onClick={() => setPanelState('scored')}>
+                        ← Back to score
+                      </button>
+                    </div>
                     {critiqueResult.sections.map((section: SectionCritique, i: number) => (
                       <div key={i} className={styles.feedbackCard}>
                         <div className={styles.feedbackCardIndicator}></div>

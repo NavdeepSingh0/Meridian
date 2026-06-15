@@ -543,3 +543,143 @@
   flex-shrink: 0;
 }
 
+/* =========================================================
+   SCORED STATE — Score Header Block
+   ========================================================= */
+
+.atsScoreHeader {
+  background: linear-gradient(135deg, var(--color-base) 0%, rgba(100, 182, 172, 0.04) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.atsScoreLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.atsScoreDisplay {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.atsScoreNumber {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.atsScoreMax {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.atsSummaryText {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+/* =========================================================
+   SCORED STATE — Strengths & Issues Subsections
+   ========================================================= */
+
+.scoredSubSection {
+  background: var(--color-base);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.scoredSubLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+.issuesLabel {
+  color: #c05e45;
+}
+
+.scoredBulletList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scoredBulletItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.scoredBulletIcon {
+  font-size: 15px !important;
+  color: #10B981;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.issueBulletItem {
+  color: #7c3f2e;
+}
+
+.issueBulletIcon {
+  font-size: 15px !important;
+  color: #c05e45;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   FEEDBACK STATE — Back to Score Ghost Button
+   ========================================================= */
+
+.backToScoreBtn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.backToScoreBtn:hover {
+  color: var(--color-primary);
+  background: rgba(100, 182, 172, 0.08);
+}

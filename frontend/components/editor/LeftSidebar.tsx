@@ -11,6 +11,33 @@ import CertificatesForm from './forms/CertificatesForm';
 
 import { useResumeStore } from '../../lib/store/resumeStore';
 
+// Icon map for optional custom sections
+const CUSTOM_SECTION_ICONS: Record<string, string> = {
+  Volunteer: 'volunteer_activism',
+  Awards: 'military_tech',
+  Publications: 'auto_stories',
+  Languages: 'translate',
+  Interests: 'interests',
+  References: 'group',
+};
+
+// Factory: creates a stable no-prop placeholder form for each custom section.
+// Defined at module level so the created component is not recreated on each render.
+function makeGenericSectionForm(sectionLabel: string) {
+  function GenericForm() {
+    return (
+      <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--color-ink-muted)', margin: 0, lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--color-primary)', flexShrink: 0, marginTop: '1px' }}>info</span>
+          The <strong style={{ color: 'var(--color-ink)', marginLeft: '2px', marginRight: '2px' }}>{sectionLabel}</strong> section is active and will be included in your exported resume.
+        </p>
+      </div>
+    );
+  }
+  GenericForm.displayName = `GenericForm_${sectionLabel}`;
+  return GenericForm;
+}
+
 interface LeftSidebarProps {
   activeSection: string;
   setActiveSection: (s: string) => void;
@@ -162,7 +189,18 @@ export default function LeftSidebar({ activeSection, setActiveSection, isLocked 
                     <button 
                       key={sectionName}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', width: '100%', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)' }}
-                      onClick={() => setShowAddMenu(false)}
+                      onClick={() => {
+                      setSections(prev => {
+                        if (prev.find(s => s.id === sectionName)) return prev;
+                        return [...prev, {
+                          id: sectionName,
+                          label: sectionName,
+                          icon: CUSTOM_SECTION_ICONS[sectionName] || 'add_circle',
+                          component: makeGenericSectionForm(sectionName),
+                        }];
+                      });
+                      setShowAddMenu(false);
+                    }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >

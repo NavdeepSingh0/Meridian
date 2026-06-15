@@ -71,14 +71,34 @@ export default function ClassicTemplate({ highlightedSections = [] }: ClassicTem
         <h1 className={styles.docName} style={{ color: basics.name ? 'inherit' : 'var(--color-ink-muted)' }}>
           {basics.name || 'Your Name'}
         </h1>
+        {basics.label && (
+          <p style={{ textAlign: 'center', fontSize: '14px', fontWeight: 500, color: 'var(--color-ink-muted)', marginBottom: '6px', marginTop: '-4px', fontStyle: 'italic' }}>
+            {basics.label}
+          </p>
+        )}
         <div className={styles.docContact}>
           {basics.email && <span>{basics.email}</span>}
           {basics.email && basics.phone && <span>•</span>}
           {basics.phone && <span>{basics.phone}</span>}
           {((basics.email || basics.phone) && basics.location?.city) && <span>•</span>}
           {basics.location?.city && <span>{basics.location.city}{basics.location.region ? `, ${basics.location.region}` : ''}</span>}
+          {basics.profiles && basics.profiles.length > 0 && basics.profiles.map((profile, i) => (
+            <React.Fragment key={`profile-${i}`}>
+              <span>•</span>
+              <span>{profile.network}</span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
+
+      {basics.summary && (
+        <div style={{ marginBottom: '32px' }}>
+          <h2 className={styles.docSectionTitle}>Summary</h2>
+          <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--color-ink)', margin: 0 }}>
+            {basics.summary}
+          </p>
+        </div>
+      )}
 
       <div style={{ marginBottom: '32px', ...workProps.style }}>
         {renderMarker(workProps.marker)}
