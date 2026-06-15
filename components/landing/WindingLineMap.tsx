@@ -2,21 +2,21 @@
 import { useEffect, useRef } from 'react';
 
 export default function WindingLineMap() {
-  const svgRef    = useRef<SVGSVGElement>(null);
-  const trailRef  = useRef<SVGPathElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const trailRef = useRef<SVGPathElement>(null);
   const hiddenRef = useRef<SVGPathElement>(null);
-  const maskRef   = useRef<SVGPathElement>(null);
-  const planeRef  = useRef<SVGGElement>(null);
-  const rafRef    = useRef<number>(0);
+  const maskRef = useRef<SVGPathElement>(null);
+  const planeRef = useRef<SVGGElement>(null);
+  const rafRef = useRef<number>(0);
 
-  const drawnRef      = useRef(0);
-  const pathLenRef    = useRef(0);
-  const btnActiveRef  = useRef(false);
+  const drawnRef = useRef(0);
+  const pathLenRef = useRef(0);
+  const btnActiveRef = useRef(false);
 
   useEffect(() => {
 
     const buildPath = (w: number, h: number): string => {
-      // Find the exact center of the CTA button
+      // Find the exact center of the CTA button in SVG-local coordinates
       const btn = document.getElementById('cta-build-btn');
       let endX = w * 0.5;
       let endY = h * 0.87;
@@ -40,10 +40,15 @@ export default function WindingLineMap() {
         `S ${w * 0.88},${h * 0.42} ${w * 0.5},${h * 0.42}`,
         `S ${w * 0.12},${h * 0.56} ${w * 0.5},${h * 0.56}`,
         `S ${w * 0.88},${h * 0.70} ${w * 0.5},${h * 0.70}`,
-        // S-curve straight into the button
         `S ${w * 0.12},${endY * 0.95} ${endX},${endY}`,
       ].join(' ');
     };
+
+    // ── Arc-to-Y Lookup Table ─────────────────────────────────────────────────
+    // Pre-sampled once per setup. Used for O(N) viewport-center tracking that
+    // correctly handles non-monotonic Y on S-curves (no binary-search ambiguity).
+    let cachedMainTop = 0;
+    let lookupTable: Array<{ arcLen: number; y: number }> = [];
 
     const setup = () => {
       const svg = svgRef.current;
@@ -53,9 +58,10 @@ export default function WindingLineMap() {
 
       const w = parent.clientWidth;
       const h = parent.clientHeight;
+      if (w === 0 || h === 0) return; // bail if layout hasn't settled yet
 
-      svg.setAttribute('width',   String(w));
-      svg.setAttribute('height',  String(h));
+      svg.setAttribute('width', String(w));
+      svg.setAttribute('height', String(h));
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
       const d = buildPath(w, h);
@@ -65,25 +71,34 @@ export default function WindingLineMap() {
 
       const len = hiddenRef.current?.getTotalLength() ?? 0;
       pathLenRef.current = len;
-      maskRef.current?.setAttribute('stroke-dasharray',  String(len));
+      maskRef.current?.setAttribute('stroke-dasharray', String(len));
       maskRef.current?.setAttribute('stroke-dashoffset', String(len));
-      
-      // Update cached top offset
-      updateCache();
-    };
 
-    // ── Cache for Layout ──────────────────────────────────────────────────────
-    let cachedMainTop = 0;
-    let lastScrollY = -1;
-    let targetLength = 0;
-
-    const updateCache = () => {
-      const svg = svgRef.current;
-      const mainEl = svg?.closest('main');
+      // Cache the document Y offset of <main> so we can convert viewport
+      // coordinates into SVG-local coordinates during the animate loop.
+      const mainEl = svg.closest('main');
       if (mainEl) {
         cachedMainTop = mainEl.getBoundingClientRect().top + window.scrollY;
       }
+
+      // Build lookup table: 300 (arcLen, y) samples across the full path.
+      // A linear forward-scan on this table finds the FIRST crossing for any
+      // target Y, which correctly handles S-curves that dip upward momentarily.
+      const N = 300;
+      const hidden = hiddenRef.current;
+      lookupTable = [];
+      if (hidden && len > 0) {
+        for (let i = 0; i <= N; i++) {
+          const arcLen = (i / N) * len;
+          const pt = hidden.getPointAtLength(arcLen);
+          lookupTable.push({ arcLen, y: pt.y });
+        }
+      }
     };
+
+    // ── Layout Cache ──────────────────────────────────────────────────────────
+    let lastScrollY = -1;
+    let targetLength = 0;
 
     // ── CTA Button Invert ─────────────────────────────────────────────────────
     const setButtonInverted = (on: boolean) => {
@@ -92,53 +107,50 @@ export default function WindingLineMap() {
       const btn = document.getElementById('cta-build-btn');
       if (!btn) return;
       if (on) {
-        btn.style.transition  = 'all 0.3s ease';
-        btn.style.background  = 'var(--color-ink)'; // Dark Ink
-        btn.style.color       = '#FCFFFD'; // White text
-        btn.style.transform   = 'scale(1.05)';
-        btn.style.boxShadow   = '0 8px 24px rgba(100,182,172,0.4)'; // Teal glow
+        btn.style.transition = 'all 0.3s ease';
+        btn.style.background = 'var(--color-ink)';
+        btn.style.color = '#FCFFFD';
+        btn.style.transform = 'scale(1.05)';
+        btn.style.boxShadow = '0 8px 24px rgba(100,182,172,0.4)';
       } else {
-        btn.style.background  = '';
-        btn.style.color       = '';
-        btn.style.transform   = '';
-        btn.style.boxShadow   = '';
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.transform = '';
+        btn.style.boxShadow = '';
       }
     };
 
-    // ── RAF loop — The "Always in Focus" logic ────────────────────────────────
+    // ── RAF Loop ──────────────────────────────────────────────────────────────
     const animate = () => {
-      const len    = pathLenRef.current;
+      const len = pathLenRef.current;
       const hidden = hiddenRef.current;
-      const plane  = planeRef.current;
+      const plane = planeRef.current;
 
-      if (len > 0 && hidden && plane) {
+      if (len > 0 && hidden && plane && lookupTable.length > 0) {
         const currentScrollY = window.scrollY;
-        
-        // 1. Only do heavy layout/math if scroll changed
+
         if (currentScrollY !== lastScrollY) {
           lastScrollY = currentScrollY;
+
+          // The Y position of the viewport center within the SVG coordinate space.
+          // cachedMainTop converts from document coords to SVG-local coords.
           const targetY = (currentScrollY + window.innerHeight * 0.5) - cachedMainTop;
 
-          // 2. Binary search
-          let low = 0;
-          let high = len;
-          
-          for (let i = 0; i < 14; i++) {
-            const mid = (low + high) / 2;
-            const pt = hidden.getPointAtLength(mid);
-            if (pt.y < targetY) {
-              low = mid;
-            } else {
-              high = mid;
+          // Forward scan: find the FIRST arc position where path Y >= targetY.
+          // Using the first crossing (not binary search) guarantees correct
+          // behavior on non-monotonic S-curves.
+          targetLength = len; // fallback: full path if targetY is past the end
+          for (let i = 0; i < lookupTable.length; i++) {
+            if (lookupTable[i].y >= targetY) {
+              targetLength = lookupTable[i].arcLen;
+              break;
             }
-            targetLength = mid;
           }
         }
 
-        // 3. Lerp our drawn progress
+        // Lerp drawn toward target for smooth motion
         const diff = targetLength - drawnRef.current;
-        
-        // 4. Only update DOM if we are still moving
+
         if (Math.abs(diff) > 0.1) {
           drawnRef.current += diff * 0.15;
           const drawn = drawnRef.current;
@@ -152,7 +164,6 @@ export default function WindingLineMap() {
 
           const distFromEnd = len - drawn;
           let opacity = 1;
-          
           if (distFromEnd < 80) {
             opacity = Math.max(0, distFromEnd / 80);
           }
@@ -184,7 +195,7 @@ export default function WindingLineMap() {
       cancelAnimationFrame(rafRef.current);
       const btn = document.getElementById('cta-build-btn');
       if (btn) {
-        btn.style.background = ''; btn.style.color = ''; 
+        btn.style.background = ''; btn.style.color = '';
         btn.style.transform = ''; btn.style.boxShadow = '';
       }
     };
@@ -198,7 +209,7 @@ export default function WindingLineMap() {
       <svg
         ref={svgRef}
         xmlns="http://www.w3.org/2000/svg"
-        style={{ display: 'block', overflow: 'visible' }}
+        style={{ display: 'block', overflow: 'hidden' }}
       >
         <defs>
           <path ref={hiddenRef} d="" fill="none" stroke="none" visibility="hidden" />
@@ -227,7 +238,6 @@ export default function WindingLineMap() {
           mask="url(#winding-scroll-mask)"
         />
 
-        {/* The restored, original paper airplane SVG centered at 0,0 */}
         <g ref={planeRef} opacity="0">
           <path
             d="M 10,-10 L 3,10 L -1,1 L -10,-3 L 10,-10 Z"

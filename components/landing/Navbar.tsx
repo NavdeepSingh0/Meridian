@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
@@ -11,9 +12,17 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <nav role="navigation" aria-label="Main navigation" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 'var(--z-nav)', background: 'rgba(252, 255, 253, 0.88)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--color-border)' }}>
-      <div className="container" style={{ minHeight: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <nav role="navigation" aria-label="Main navigation" className={`nav-container ${scrolled ? 'nav-scrolled' : ''}`}>
+      <div className="container nav-inner">
         
         <Link href="/" className="inline-flex items-center gap-3" style={{ textDecoration: 'none' }}>
           {/* The Meridian Navigational Monogram */}
@@ -32,14 +41,15 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <ul className="hidden lg:flex" style={{ listStyle: 'none', gap: '32px' }}>
-          <li><Link href="#features" className="nav-link">Features</Link></li>
-          <li><Link href="#how-it-works" className="nav-link">How it works</Link></li>
-          <li><Link href="#templates" className="nav-link">Templates</Link></li>
+        <ul className="hidden lg:flex items-center" style={{ listStyle: 'none', gap: '8px' }}>
+          <li><Link href="#features" className="nav-link-pill">Features</Link></li>
+          <li><Link href="#how-it-works" className="nav-link-pill">How it works</Link></li>
+          <li><Link href="#templates" className="nav-link-pill">Templates</Link></li>
+          <li><Link href="#ats-analysis" className="nav-link-pill">ATS Analyzer</Link></li>
         </ul>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button className="nav-signin hidden lg:block">Sign in</button>
+          <Link href="/builder?mode=signin" className="btn-secondary-nav hidden lg:inline-flex">Sign in</Link>
           <Link href="/builder" className="btn-primary-nav hidden lg:inline-flex">Get started →</Link>
           
           <button 
@@ -68,14 +78,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div id="mobile-menu" role="dialog" aria-label="Navigation menu" className={isOpen ? 'block' : 'hidden'} style={{ position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 'var(--z-mobile-drawer)', background: 'var(--color-base)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+      <div id="mobile-menu" role="dialog" aria-label="Navigation menu" className={isOpen ? 'block' : 'hidden'} style={{ position: 'fixed', top: scrolled ? '60px' : '76px', left: 0, right: 0, zIndex: 'var(--z-mobile-drawer)', background: 'var(--color-base)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', transition: 'top 0.3s ease' }}>
         <div className="container" style={{ padding: '0 20px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Link href="#features" className="nav-link" style={{ padding: '24px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>Features</Link>
-            <Link href="#how-it-works" className="nav-link" style={{ padding: '24px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>How it works</Link>
-            <Link href="#templates" className="nav-link" style={{ padding: '24px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>Templates</Link>
-            <div style={{ borderTop: '1px solid var(--color-border)', margin: '0' }}></div>
-            <Link href="/builder" className="btn-primary-nav" style={{ width: '100%', justifyContent: 'center', padding: '14px', margin: '16px 0' }} onClick={() => setIsOpen(false)}>Get started →</Link>
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '12px 0' }}>
+            <Link href="#features" className="nav-link" style={{ padding: '16px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>Features</Link>
+            <Link href="#how-it-works" className="nav-link" style={{ padding: '16px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>How it works</Link>
+            <Link href="#templates" className="nav-link" style={{ padding: '16px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>Templates</Link>
+            <Link href="#ats-analysis" className="nav-link" style={{ padding: '16px 0', fontSize: '1rem', color: 'var(--color-ink)' }} onClick={() => setIsOpen(false)}>ATS Analyzer</Link>
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '8px 0' }}></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '12px 0' }}>
+              <Link href="/builder?mode=signin" className="btn-secondary-nav" style={{ justifyContent: 'center', padding: '12px' }} onClick={() => setIsOpen(false)}>Sign in</Link>
+              <Link href="/builder" className="btn-primary-nav" style={{ justifyContent: 'center', padding: '12px' }} onClick={() => setIsOpen(false)}>Get started →</Link>
+            </div>
           </div>
         </div>
       </div>

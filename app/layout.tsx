@@ -21,10 +21,16 @@ export const metadata = {
   description: 'Build a polished resume in minutes. Get section-by-section feedback and pinpoint ATS gaps.',
 };
 
+import Providers from './providers';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${instrumentSerif.variable} ${inter.variable}`} suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

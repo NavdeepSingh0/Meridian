@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, MotionValue } from 'framer-motion';
 
 const CARD_SCROLL_STEP_VH = 60;
@@ -43,66 +43,40 @@ const parsedDeckTransforms = [
 const segmentStep = 1 / (features.length - 1);
 const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
 
-// A flawlessly spaced 0-to-1 array to prevent WAAPI "non-decreasing offset" crashes
-const GLOBAL_INPUTS = Array.from({ length: 100 }, (_, i) => i / 99);
+
 
 /* ─── State Calculators ───────────────────────────────────────────────────────── */
 
-function getCardState(index: number, p: number) {
-  const resting = parsedDeckTransforms[index];
-  const activeZ = 20 - index; // Guarantees outgoing card is always physically ON TOP of incoming card
 
-  const active = { x: 0, y: -10, r: 0, s: 1.03, opacity: 1, shadow: 1, zIndex: activeZ };
-  const dismissed = { x: 0, y: -140, r: -8, s: 1.05, opacity: 0, shadow: 0, zIndex: resting.zIndex };
-
-  const startActivation = (index - 1) * segmentStep;
-  const peakActive = index * segmentStep;
-  const endDismissal = (index + 1) * segmentStep;
-
-  if (p <= startActivation) {
-    return { ...resting, shadow: 0, zIndex: resting.zIndex };
-  } else if (p < peakActive) {
-    const t = (p - startActivation) / segmentStep;
-    return {
-      x: lerp(resting.x, active.x, t),
-      y: lerp(resting.y, active.y, t),
-      r: lerp(resting.r, active.r, t),
-      s: lerp(resting.s, active.s, t),
-      opacity: lerp(resting.opacity, active.opacity, t),
-      shadow: t,
-      zIndex: activeZ
-    };
-  } else if (p < endDismissal) {
-    const t = (p - peakActive) / segmentStep;
-    return {
-      x: lerp(active.x, dismissed.x, t),
-      y: lerp(active.y, dismissed.y, t),
-      r: lerp(active.r, dismissed.r, t),
-      s: lerp(active.s, dismissed.s, t),
-      opacity: lerp(active.opacity, dismissed.opacity, t),
-      shadow: 1 - t,
-      zIndex: activeZ
-    };
-  } else {
-    return dismissed;
-  }
-}
 
 function getTextState(index: number, p: number) {
   const activePoint = index * segmentStep;
   const start = activePoint - segmentStep;
   const end = activePoint + segmentStep;
 
-  if (p <= start) return { opacity: 0, y: 28 };
+  if (p <= start) return { opacity: 0, y: 20 };
+  
   if (p < activePoint) {
     const t = (p - start) / segmentStep;
-    return { opacity: t, y: lerp(28, 0, t) };
+    // Crisp fade in from 0.5 to 0.7
+    const opacity = t < 0.5 ? 0 : t >= 0.7 ? 1 : (t - 0.5) / 0.2;
+    // Snappy ease out Y translation
+    const yT = t < 0.4 ? 0 : t >= 0.8 ? 1 : (t - 0.4) / 0.4;
+    const easeOut = 1 - Math.pow(1 - yT, 3);
+    return { opacity, y: lerp(20, 0, easeOut) };
   }
+  
   if (p < end) {
     const t = (p - activePoint) / segmentStep;
-    return { opacity: 1 - t, y: lerp(0, -28, t) };
+    // Crisp fade out from 0.3 to 0.5
+    const opacity = t < 0.3 ? 1 : t > 0.5 ? 0 : 1 - ((t - 0.3) / 0.2);
+    // Snappy ease in Y translation
+    const yT = t < 0.2 ? 0 : t > 0.6 ? 1 : (t - 0.2) / 0.4;
+    const easeIn = yT * yT * yT;
+    return { opacity, y: lerp(0, -20, easeIn) };
   }
-  return { opacity: 0, y: -28 };
+  
+  return { opacity: 0, y: -20 };
 }
 
 function getDotState(dotIndex: number, p: number) {
@@ -112,12 +86,19 @@ function getDotState(dotIndex: number, p: number) {
 
   let scaleX = 1;
   if (p > start && p < end) {
-    const t = p < targetProgress ? (p - start) / segmentStep : 1 - ((p - targetProgress) / segmentStep);
-    scaleX = lerp(1, 3.2, t);
+    // Distance from target as a fraction of segmentStep
+    const dist = Math.abs(p - targetProgress) / segmentStep; // 0 to 1
+    // Hold expanded state when text is fully visible (dist < 0.3)
+    if (dist < 0.3) {
+      scaleX = 3.2;
+    } else if (dist < 0.5) {
+      const t = 1 - ((dist - 0.3) / 0.2); // 1 to 0
+      scaleX = lerp(1, 3.2, t);
+    }
   }
 
-  const colorStart = targetProgress - segmentStep / 2;
-  const colorEnd = targetProgress + segmentStep / 2;
+  const colorStart = targetProgress - segmentStep * 0.4;
+  const colorEnd = targetProgress + segmentStep * 0.4;
   const bgType = (p >= colorStart && p <= colorEnd) ? 'var(--color-primary)' : 'var(--color-border)';
 
   return { scaleX, bgType };
@@ -133,6 +114,15 @@ export default function FeaturesSection() {
     target: sectionRef,
     offset: ['start start', 'end end']
   });
+
+  const [autoIndex, setAutoIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAutoIndex(prev => (prev + 1) % features.length);
+    }, 3500); // Shuffle every 3.5 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const totalVH = features.length * CARD_SCROLL_STEP_VH + 100;
 
@@ -168,7 +158,7 @@ export default function FeaturesSection() {
           <div className="features-split">
             <div className="card-deck-wrapper">
               {features.map((_, i) => (
-                <MotionCard key={i} index={i} progress={scrollYProgress} />
+                <MotionCard key={i} index={i} activeIndex={autoIndex} />
               ))}
             </div>
 
@@ -184,34 +174,39 @@ export default function FeaturesSection() {
   );
 }
 
-function MotionCard({ index, progress }: { index: number; progress: MotionValue<number> }) {
-  const outputs = useMemo(() => GLOBAL_INPUTS.map(p => getCardState(index, p)), [index]);
+function MotionCard({ index, activeIndex }: { index: number; activeIndex: number }) {
+  const resting = parsedDeckTransforms[index];
+  const activeZ = 20 - index;
 
-  const transformX = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.x));
-  const transformY = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.y));
-  const rotateDeg = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.r));
-  const scaleRatio = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.s));
-  const opacityVal = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.opacity));
-  const shadowOpacity = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.shadow));
+  const active = { x: 0, y: -10, r: 0, s: 1.03, opacity: 1, shadow: 1, zIndex: activeZ };
+  const dismissed = { x: 0, y: -140, r: -8, s: 1.05, opacity: 0, shadow: 0, zIndex: resting.zIndex };
 
-  // Custom function for Z-index bypasses WAAPI completely to prevent floating point interpolation
-  const zIndexVal = useTransform(progress, (p) => getCardState(index, p).zIndex);
+  let targetState;
+  if (index === activeIndex) {
+    targetState = active;
+  } else if (index < activeIndex) {
+    targetState = dismissed;
+  } else {
+    targetState = { ...resting, shadow: 0, zIndex: resting.zIndex };
+  }
 
   return (
     <motion.div
       className="deck-card"
-      style={{
-        x: transformX,
-        y: transformY,
-        rotate: rotateDeg,
-        scale: scaleRatio,
-        opacity: opacityVal,
-        zIndex: zIndexVal,
+      animate={{
+        x: targetState.x,
+        y: targetState.y,
+        rotate: targetState.r,
+        scale: targetState.s,
+        opacity: targetState.opacity,
+        zIndex: targetState.zIndex,
       }}
+      transition={{ type: "spring", stiffness: 60, damping: 14 }}
     >
       <motion.div
         className="deck-card-shadow"
-        style={{ opacity: shadowOpacity }}
+        animate={{ opacity: targetState.shadow }}
+        transition={{ type: "spring", stiffness: 60, damping: 14 }}
       />
       <div className="deck-card-inner">
         <CardMockup index={index} />
@@ -221,10 +216,9 @@ function MotionCard({ index, progress }: { index: number; progress: MotionValue<
 }
 
 function MotionTextPanel({ index, feature, progress }: { index: number; feature: typeof features[0]; progress: MotionValue<number> }) {
-  const outputs = useMemo(() => GLOBAL_INPUTS.map(p => getTextState(index, p)), [index]);
-
-  const textOpacity = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.opacity));
-  const textTranslateY = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.y));
+  // Use continuous function transforms to prevent stuttering across keyframes
+  const textOpacity = useTransform(progress, (p) => getTextState(index, p).opacity);
+  const textTranslateY = useTransform(progress, (p) => getTextState(index, p).y);
   const pointerEvents = useTransform(progress, (p) => getTextState(index, p).opacity > 0.85 ? 'auto' : 'none');
 
   return (
@@ -271,9 +265,8 @@ function MotionTextPanel({ index, feature, progress }: { index: number; feature:
 }
 
 function DotIndicator({ dotIndex, progress }: { dotIndex: number; progress: MotionValue<number> }) {
-  const outputs = useMemo(() => GLOBAL_INPUTS.map(p => getDotState(dotIndex, p)), [dotIndex]);
-
-  const scaleXVal = useTransform(progress, GLOBAL_INPUTS, outputs.map(o => o.scaleX));
+  // Continuous function transform for smooth scaling without stuttering
+  const scaleXVal = useTransform(progress, (p) => getDotState(dotIndex, p).scaleX);
   const bgFill = useTransform(progress, (p) => getDotState(dotIndex, p).bgType);
 
   return (

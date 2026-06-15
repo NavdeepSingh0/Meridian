@@ -2,26 +2,26 @@ import Link from 'next/link';
 
 export default function ATSSection() {
   return (
-    <section className="ats-section relative overflow-hidden">
+    <section id="ats-analysis" className="ats-section relative overflow-hidden">
       <div className="container relative z-10">
         <div className="ats-section-grid">
           
           <div className="ats-copy">
-            <div className="eyebrow-pill" style={{ marginBottom: '24px' }}>ATS ANALYSIS</div>
-            <h2 className="type-section" style={{ color: 'var(--color-ink)', marginBottom: '20px' }}>
+            <div className="eyebrow-pill" style={{ marginBottom: '24px', border: '1px solid rgba(252, 255, 253, 0.15)', background: 'rgba(252, 255, 253, 0.05)', color: 'var(--color-primary)' }}>ATS ANALYSIS</div>
+            <h2 className="type-section" style={{ color: '#FCFFFD', marginBottom: '20px' }}>
               Know exactly why you&apos;re being filtered out.
             </h2>
-            <p className="type-body-lg" style={{ color: 'var(--color-ink-muted)', marginBottom: '28px' }}>
+            <p className="type-body-lg" style={{ color: 'rgba(252, 255, 253, 0.70)', marginBottom: '28px' }}>
               Applicant tracking systems reject most resumes before a human ever reads them.
               Our ATS analyzer shows you the exact issues — not a generic score, but the specific
               lines and sections that need attention, with suggested rewrites you can apply in one click.
             </p>
             <ul className="ats-bullets">
-              <li className="ats-bullet">
+              <li className="ats-bullet" style={{ color: 'rgba(252, 255, 253, 0.85)' }}>
                 <span className="bullet-arrow" aria-hidden="true">→</span>
                 Highlights the exact sentence or bullet with an issue
               </li>
-              <li className="ats-bullet">
+              <li className="ats-bullet" style={{ color: 'rgba(252, 255, 253, 0.85)' }}>
                 <span className="bullet-arrow" aria-hidden="true">→</span>
                 Compares your skills against any job description you paste
               </li>
