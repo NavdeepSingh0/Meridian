@@ -165,6 +165,8 @@ interface ResumeStore {
   fontSize: number;
   documentMargin: number;
   undoStack: ResumeData[];
+  hasDownloadedFreeResume: boolean;
+  user: any;
 
   // Actions
   // Basics
