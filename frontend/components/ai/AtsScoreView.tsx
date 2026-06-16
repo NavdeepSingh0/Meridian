@@ -28,17 +28,15 @@ export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isChec
         )}
       </div>
 
-      {!isCheckerPage && (
-        <div className={styles.targetJobCard}>
-          <div className={styles.targetJobIcon}>
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cases</span>
-          </div>
-          <div className={styles.targetJobInfo}>
-            <div className={styles.targetJobLabel}>Target Job</div>
-            <div className={styles.targetJobTitle}>{(atsResult.missing_keywords && atsResult.missing_keywords.length > 0) ? 'Custom Job Description' : 'General Best Practices'}</div>
-          </div>
+      <div className={styles.targetJobCard}>
+        <div className={styles.targetJobIcon}>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cases</span>
         </div>
-      )}
+        <div className={styles.targetJobInfo}>
+          <div className={styles.targetJobLabel}>Target Job</div>
+          <div className={styles.targetJobTitle}>{(atsResult.missing_keywords && atsResult.missing_keywords.length > 0) ? 'Custom Job Description' : 'General Best Practices'}</div>
+        </div>
+      </div>
 
       <div className={styles.keywordsCard}>
         <div className={styles.keywordsCardHeader}>
@@ -46,45 +44,39 @@ export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isChec
             <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)', fontSize: '20px' }}>verified</span>
             {atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? 'Keywords Match' : 'Best Practices Match'}
           </div>
-          {!isCheckerPage && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span className={`${styles.keywordsCardBadge} ${atsResult.overall_score >= 70 ? styles.keywordsCardBadgeGood : ''}`}>
-                {atsResult.overall_score >= 70 ? 'Good Match' : 'Needs Work'}
-              </span>
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span className={`${styles.keywordsCardBadge} ${atsResult.overall_score >= 70 ? styles.keywordsCardBadgeGood : ''}`}>
+              {atsResult.overall_score >= 70 ? 'Good Match' : 'Needs Work'}
+            </span>
+          </div>
         </div>
 
         <div className={styles.keywordsCardBody}>
-          {!isCheckerPage && (
-            <>
-              <div className={styles.scoreSummaryRow}>
-                <div className={styles.scoreText}>
-                  {atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? (
-                    <>Your resume has <strong>{matchedCount} out of {totalKeywords}</strong> keywords that appear in the job description.</>
-                  ) : (
-                    <>Your resume scores <strong>{atsResult.overall_score}%</strong> against standard ATS best practices.</>
-                  )}
-                </div>
-                <div className={styles.scoreDonut}>
-                  <svg viewBox="0 0 36 36">
-                    <path stroke="var(--color-outline-variant, #E5E7EB)" strokeWidth="4" strokeLinecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}, 100`} fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  </svg>
-                  <span className={styles.scoreDonutText}>{atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}%</span>
+            <div className={styles.scoreSummaryRow}>
+              <div className={styles.scoreText}>
+                {atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? (
+                  <>Your resume has <strong>{matchedCount} out of {totalKeywords}</strong> keywords that appear in the job description.</>
+                ) : (
+                  <>Your resume scores <strong>{atsResult.overall_score}%</strong> against standard ATS best practices.</>
+                )}
+              </div>
+              <div className={styles.scoreDonut}>
+                <svg viewBox="0 0 36 36">
+                  <path stroke="var(--color-outline-variant, #E5E7EB)" strokeWidth="4" strokeLinecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}, 100`} fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <span className={styles.scoreDonutText}>{atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}%</span>
+              </div>
+            </div>
+
+            {atsResult.overall_score < 70 && (
+              <div className={styles.tipBox}>
+                <span className={`material-symbols-outlined ${styles.tipBoxIcon}`}>lightbulb</span>
+                <div className={styles.tipBoxText}>
+                  Try to get your score above <strong>70%</strong> to increase your chances!
                 </div>
               </div>
-
-              {atsResult.overall_score < 70 && (
-                <div className={styles.tipBox}>
-                  <span className={`material-symbols-outlined ${styles.tipBoxIcon}`}>lightbulb</span>
-                  <div className={styles.tipBoxText}>
-                    Try to get your score above <strong>70%</strong> to increase your chances!
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+            )}
 
           <div className={styles.keywordGrid}>
             {atsResult.matched_keywords?.map((kw, i) => (

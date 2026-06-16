@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import builderStyles from '../../app/builder/builder.module.css';
 import styles from '../../app/builder/AnalysisPanel.module.css';
 import { useResumeStore } from '../../lib/store/resumeStore';
@@ -83,9 +84,53 @@ export default function AnalysisPanel() {
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative">
         {isLoading && (
-          <div className={builderStyles.panelOverlay}>
-            <div className="material-symbols-outlined text-[var(--color-primary)] text-[48px] animate-spin">refresh</div>
-            <p className={builderStyles.overlayText}>Analyzing Resume...</p>
+          <div className={builderStyles.panelOverlay} style={{ justifyContent: 'flex-start', paddingTop: '32px', paddingBottom: '24px', background: 'rgba(252, 255, 253, 0.95)' }}>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              className="w-full flex flex-col gap-8 px-2"
+            >
+              {/* Header skeleton */}
+              <div className="flex flex-col gap-3">
+                 <div className="h-6 w-1/3 bg-[#D4E8E4] rounded animate-pulse" />
+                 <div className="h-2.5 w-2/3 bg-[#D4E8E4] rounded opacity-60 animate-pulse" style={{ animationDelay: '100ms' }} />
+                 <div className="h-2.5 w-1/2 bg-[#D4E8E4] rounded opacity-60 animate-pulse" style={{ animationDelay: '200ms' }} />
+              </div>
+
+              {/* Experience blocks skeleton */}
+              {[0, 1].map(i => (
+                <div key={i} className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="h-4 w-1/4 bg-[var(--color-primary)] rounded opacity-30 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+                    <div className="h-3 w-1/6 bg-[#D4E8E4] rounded opacity-80 animate-pulse" />
+                  </div>
+                  <div className="flex flex-col gap-2.5 pl-3 border-l-2 border-[#D4E8E4] border-opacity-50">
+                     <div className="h-2.5 w-[92%] bg-[#D4E8E4] rounded opacity-70 animate-pulse" style={{ animationDelay: `${i * 200 + 100}ms` }} />
+                     <div className="h-2.5 w-[85%] bg-[#D4E8E4] rounded opacity-70 animate-pulse" style={{ animationDelay: `${i * 200 + 200}ms` }} />
+                     <div className="h-2.5 w-[88%] bg-[#D4E8E4] rounded opacity-70 animate-pulse" style={{ animationDelay: `${i * 200 + 300}ms` }} />
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+            
+            <div className="mt-auto flex flex-col items-center gap-4 w-full px-2">
+              <div className="w-full h-1 bg-[#D4E8E4] rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-[var(--color-primary)]"
+                  initial={{ width: "20%", x: "-100%" }}
+                  animate={{ x: "400%" }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+                />
+              </div>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)', letterSpacing: '0.02em' }}
+              >
+                Synthesizing Resume Data...
+              </motion.p>
+            </div>
           </div>
         )}
 
