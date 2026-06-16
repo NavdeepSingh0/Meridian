@@ -274,15 +274,13 @@ FAILS. Penalties are cumulative. Start at 100 and subtract.
     the text fields contain clearly garbled content.
     FAIL PENALTY: −8 points
 
-  Check 2 — Essential Sections Present (ALL FOUR must be present)
+  Check 2 — Essential Sections Present
     The resume must contain ALL of: (a) contact info with name+email+phone,
-    (b) work[] with at least 1 entry, (c) education[] with at least 1 entry,
-    (d) skills[] with at least 1 group.
-    NOTE: projects[] are NOT a substitute for work[]. An empty work[] is a HARD
-    FAIL for this check — real ATS systems require employment history as a
-    distinct section from personal projects.
-    FAIL PENALTY: −12 points per missing essential element (max −36)
-    If work[] is empty: always apply the −12 penalty for missing work section.
+    (b) education[] with at least 1 entry, (c) skills[] with at least 1 group.
+    NOTE: work[] (employment history) is evaluated separately in Check 10 —
+    do NOT penalise here for an empty work[]. Only penalise for missing
+    education or skills in this check.
+    FAIL PENALTY: −12 points per missing essential element (max −24)
 
   Check 3 — Contact Information Completeness
     basics.email, basics.phone, and basics.location.city must all be non-empty.
@@ -330,19 +328,21 @@ FAILS. Penalties are cumulative. Start at 100 and subtract.
 
   Check 9 — Section Order & Structure
     Professional ATS-preferred order: Contact → Summary → Experience → Education
-    → Skills → Projects → Certs. The ABSENCE of a work section is itself a
-    structural problem — it forces ATS parsers to fall back to projects, which
-    many parsers do NOT treat as experience equivalents.
-    Flag if: work section is missing entirely, or education is buried below skills.
+    → Skills → Projects → Certs.
+    Flag ONLY if: education is buried below skills, OR summary is missing entirely
+    on a resume that has work experience. Do NOT penalise here for an absent
+    work section — that is exclusively handled by Check 10.
     FAIL PENALTY: −5 points
 
-  [NEW] Check 10 — Work Experience Depth
+  [NEW] Check 10 — Work Experience Depth (SOLE AUTHORITY on employment history)
     Does the candidate have actual employment history (full-time, part-time,
     internship, or freelance) listed in work[]? This is the most important signal
     for ATS ranking. Projects, hackathons, and personal apps are NOT work experience.
+    IMPORTANT: This check is the ONLY check that penalises for missing work history.
+    Checks 2 and 9 must NOT fire for an empty work[] — all work-experience
+    deductions are consolidated here.
     Evaluation:
-      • work[] is completely empty → HARD FAIL (−18 points). This represents the
-        single biggest penalty in any real ATS system. Do not understate it.
+      • work[] is completely empty → HARD FAIL (−18 points).
       • work[] has only 1 entry with fewer than 2 highlights → partial fail (−9 points)
       • work[] has 1+ entries with strong highlights → pass (no deduction)
     FAIL PENALTY: −18 for empty work[], −9 for thin single entry
