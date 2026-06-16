@@ -1,6 +1,7 @@
 'use client';
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import Link from 'next/link';
 
 export default function CTASection() {
   const sectionRef = useRef(null);
@@ -35,9 +36,9 @@ export default function CTASection() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
           >
-            <a href="#" id="cta-build-btn" className="btn-primary-hero" onClick={(e) => e.preventDefault()}>
+            <Link href="/builder" id="cta-build-btn" className="btn-primary-hero">
               Start Your Journey →
-            </a>
+            </Link>
             <a href="#features" className="btn-ghost-hero" onClick={(e) => { e.preventDefault(); document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' }); }}>
               Explore the Toolkit
             </a>

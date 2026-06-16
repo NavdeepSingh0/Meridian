@@ -1,8 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import AuthModal from '../auth/AuthModal';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -56,15 +59,23 @@ export default function Navbar() {
 
         {/* Right actions — always visible */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <a href="#" className="btn-secondary-nav" style={{ display: 'inline-flex' }} onClick={(e) => e.preventDefault()}>
+          <button className="btn-secondary-nav" style={{ display: 'inline-flex', cursor: 'pointer', border: 'none' }} onClick={() => setShowAuthModal(true)}>
             Sign in
-          </a>
-          <a href="#" className="btn-primary-nav" style={{ display: 'inline-flex' }} onClick={(e) => e.preventDefault()}>
+          </button>
+          <Link href="/builder" className="btn-primary-nav" style={{ display: 'inline-flex' }}>
             Get Started →
-          </a>
+          </Link>
         </div>
 
       </div>
+
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onSuccess={() => {
+          setShowAuthModal(false);
+        }}
+      />
     </nav>
   );
 }

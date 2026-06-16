@@ -1,5 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 const easeOutExpo: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -81,24 +82,22 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: easeOutExpo, delay: 0.5 }}
           >
-            <a
-              href="#"
+            <Link
+              href="/builder"
               className="type-btn"
               style={{ background: 'var(--color-ink)', color: '#FCFFFD', padding: '14px 28px', borderRadius: 'var(--radius-pill)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', transition: 'transform 150ms ease' }}
-              onClick={(e) => e.preventDefault()}
               onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
             >
               Start Your Journey →
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              href="/checker"
               className="type-btn"
               style={{ background: 'transparent', color: '#FCFFFD', border: '1.5px solid rgba(252,255,253,0.35)', padding: '14px 28px', borderRadius: 'var(--radius-pill)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', transition: 'border-color 150ms ease' }}
-              onClick={(e) => e.preventDefault()}
             >
               Check Your Flight Path
-            </a>
+            </Link>
           </motion.div>
 
           {/* Trust Line */}
