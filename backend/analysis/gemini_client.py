@@ -23,5 +23,5 @@ SAFETY_SETTINGS = [
 ]
 
 def is_demo_mode() -> bool:
-    """Return True if no Gemini API key is configured."""
-    return not bool(settings.GEMINI_API_KEY)
+    """Return True if no Gemini API key is configured or we want to force demo mode."""
+    return True
