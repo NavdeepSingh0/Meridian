@@ -8,6 +8,7 @@ import CritiqueFeedbackView from './CritiqueFeedbackView';
 
 export default function AnalysisPanel() {
   const [activeTab, setActiveTab] = useState<'target' | 'chat'>('target');
+  const [lastAppliedSuggestion, setLastAppliedSuggestion] = useState<string | null>(null);
 
   const { 
     resumeData, jobDescription, setJobDescription, 
@@ -53,9 +54,15 @@ export default function AnalysisPanel() {
       {
         onSuccess: (rewrittenSectionData) => {
           injectImprovement(section, rewrittenSectionData);
+          setLastAppliedSuggestion(suggestion);
         }
       }
     );
+  };
+
+  const handleUndo = () => {
+    useResumeStore.getState().undoLastAIEdit();
+    setLastAppliedSuggestion(null);
   };
 
   const isLoading = atsScoreMutation.isPending || critiqueMutation.isPending;
@@ -134,6 +141,8 @@ export default function AnalysisPanel() {
                     onBack={() => setPanelState('scored')} 
                     onApplyImprovement={handleApplyImprovement}
                     applyingSuggestion={applySuggestionMutation.isPending ? applySuggestionMutation.variables?.suggestion : null}
+                    lastAppliedSuggestion={lastAppliedSuggestion}
+                    onUndo={handleUndo}
                   />
                 )}
               </>

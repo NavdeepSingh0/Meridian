@@ -164,6 +164,7 @@ interface ResumeStore {
   jobDescription: string;
   fontSize: number;
   documentMargin: number;
+  undoStack: ResumeData[];
 
   // Actions
   // Basics
@@ -209,6 +210,7 @@ interface ResumeStore {
   setFontSize: (size: number) => void;
   setDocumentMargin: (margin: number) => void;
   injectImprovement: (section: string, suggestion: string) => void;
+  undoLastAIEdit: () => void;
 }
 
 export const useResumeStore = create<ResumeStore>((set) => ({
@@ -221,6 +223,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   jobDescription: '',
   fontSize: 10,
   documentMargin: 1,
+  undoStack: [],
 
   // Hydration
   hydratePersistedState: (state) => set((prev) => ({ ...prev, ...state })),
@@ -230,6 +233,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   setDocumentMargin: (margin) => set({ documentMargin: margin }),
 
   injectImprovement: (section, rewrittenSectionData) => set((state) => {
+    const newUndoStack = [...state.undoStack, JSON.parse(JSON.stringify(state.resumeData))];
     const newData = JSON.parse(JSON.stringify(state.resumeData));
     
     // Check if section is valid in our state. If it's "summary", we map it to "basics" since summary is inside basics.
@@ -241,7 +245,14 @@ export const useResumeStore = create<ResumeStore>((set) => ({
         console.warn(`Unknown section '${section}' passed to injectImprovement.`);
     }
     
-    return { resumeData: newData };
+    return { resumeData: newData, undoStack: newUndoStack };
+  }),
+
+  undoLastAIEdit: () => set((state) => {
+    if (state.undoStack.length === 0) return state;
+    const newUndoStack = [...state.undoStack];
+    const previousResumeData = newUndoStack.pop()!;
+    return { resumeData: previousResumeData, undoStack: newUndoStack };
   }),
 
   // Basics Actions

@@ -7,9 +7,11 @@ interface CritiqueFeedbackViewProps {
   onBack: () => void;
   onApplyImprovement: (section: string, suggestion: string) => void;
   applyingSuggestion?: string | null;
+  lastAppliedSuggestion?: string | null;
+  onUndo?: () => void;
 }
 
-export default function CritiqueFeedbackView({ critiqueResult, onBack, onApplyImprovement, applyingSuggestion }: CritiqueFeedbackViewProps) {
+export default function CritiqueFeedbackView({ critiqueResult, onBack, onApplyImprovement, applyingSuggestion, lastAppliedSuggestion, onUndo }: CritiqueFeedbackViewProps) {
   const mapSectionName = (rawSection: string) => {
     const lookup: Record<string, string> = {
       work: 'Experience',
@@ -63,21 +65,32 @@ export default function CritiqueFeedbackView({ critiqueResult, onBack, onApplyIm
                 {section.improvements.map((imp, iIdx) => (
                   <div key={iIdx} className={styles.suggestionItem}>
                     <span className={styles.suggestionText}>{imp}</span>
-                    <button 
-                      className={styles.applySuggestionBtn}
-                      onClick={() => onApplyImprovement(section.section, imp)}
-                      disabled={applyingSuggestion !== undefined && applyingSuggestion !== null}
-                    >
-                      {applyingSuggestion === imp ? (
-                        <>
-                          <span className="material-symbols-outlined animate-spin" style={{ fontSize: '14px' }}>refresh</span> Applying...
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span> Apply Suggestion
-                        </>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button 
+                        className={styles.applySuggestionBtn}
+                        onClick={() => onApplyImprovement(section.section, imp)}
+                        disabled={applyingSuggestion !== undefined && applyingSuggestion !== null}
+                      >
+                        {applyingSuggestion === imp ? (
+                          <>
+                            <span className="material-symbols-outlined animate-spin" style={{ fontSize: '14px' }}>refresh</span> Applying...
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span> Apply Suggestion
+                          </>
+                        )}
+                      </button>
+                      {lastAppliedSuggestion === imp && onUndo && (
+                        <button 
+                          className={styles.applySuggestionBtn}
+                          style={{ borderColor: '#ef4444', color: '#dc2626', background: '#fff1f2' }}
+                          onClick={onUndo}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#dc2626' }}>undo</span> Undo
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </div>
                 ))}
               </div>
