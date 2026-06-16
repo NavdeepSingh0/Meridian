@@ -10,6 +10,11 @@ interface AtsScoreViewProps {
 }
 
 export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isCheckerPage }: AtsScoreViewProps) {
+  const matchedCount = atsResult.matched_keywords?.length || 0;
+  const missingCount = atsResult.missing_keywords?.length || 0;
+  const totalKeywords = matchedCount + missingCount;
+  const matchPercentage = totalKeywords > 0 ? Math.round((matchedCount / totalKeywords) * 100) : 0;
+
   return (
     <div className="flex flex-col gap-4">
       <div className={styles.atsScoreHeader}>
@@ -56,7 +61,7 @@ export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isChec
               <div className={styles.scoreSummaryRow}>
                 <div className={styles.scoreText}>
                   {atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? (
-                    <>Your resume has <strong>{atsResult.strengths?.length || 0} out of {(atsResult.strengths?.length || 0) + (atsResult.missing_keywords?.length || 0)}</strong> keywords that appear in the job description.</>
+                    <>Your resume has <strong>{matchedCount} out of {totalKeywords}</strong> keywords that appear in the job description.</>
                   ) : (
                     <>Your resume scores <strong>{atsResult.overall_score}%</strong> against standard ATS best practices.</>
                   )}
@@ -64,9 +69,9 @@ export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isChec
                 <div className={styles.scoreDonut}>
                   <svg viewBox="0 0 36 36">
                     <path stroke="var(--color-outline-variant, #E5E7EB)" strokeWidth="4" strokeLinecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${atsResult.overall_score}, 100`} fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}, 100`} fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   </svg>
-                  <span className={styles.scoreDonutText}>{atsResult.overall_score}%</span>
+                  <span className={styles.scoreDonutText}>{atsResult.missing_keywords && atsResult.missing_keywords.length > 0 ? matchPercentage : atsResult.overall_score}%</span>
                 </div>
               </div>
 
@@ -82,14 +87,14 @@ export default function AtsScoreView({ atsResult, onGetFeedback, onReset, isChec
           )}
 
           <div className={styles.keywordGrid}>
-            {atsResult.strengths?.slice(0, 4).map((kw, i) => (
-              <div key={i} className={styles.keywordItem}>
+            {atsResult.matched_keywords?.map((kw, i) => (
+              <div key={`match-${i}`} className={styles.keywordItem}>
                 <span className={`material-symbols-outlined ${styles.keywordItemIcon}`}>check_circle</span>
                 <span className={styles.keywordItemText} title={kw}>{kw}</span>
               </div>
             ))}
-            {atsResult.missing_keywords?.slice(0, 6).map((kw, i) => (
-              <div key={i} className={styles.missingChip}>
+            {atsResult.missing_keywords?.map((kw, i) => (
+              <div key={`miss-${i}`} className={styles.missingChip}>
                 {kw.keyword}
               </div>
             ))}

@@ -401,6 +401,10 @@ The 11-point rubric runs IDENTICALLY regardless of JD presence.
                        Importance: High = explicitly required or appears 3+ times in JD;
                        Medium = mentioned as preferred; Low = nice-to-have.
                        Leave as empty list [] when has_job_description is false.
+  • matched_keywords — ONLY populated when has_job_description is true.
+                       List skills/terms clearly present in the JD that ARE also
+                       present in the resume.
+                       Leave as empty list [] when has_job_description is false.
 
 DO NOT redefine 'strengths' to mean "matching keywords" when a JD is present.
 The score's meaning must be stable regardless of JD.
@@ -516,7 +520,7 @@ def build_ats_user_message(
             "4. Apply hard caps from the Anti-Inflation Mandate BEFORE finalising the score.\n"
             "5. Populate 'strengths' with rubric-based qualitative strengths (NOT keyword matches).\n"
             "6. Populate 'issues' with each failing rubric check, its check number, and its penalty.\n"
-            "7. Populate 'missing_keywords' with skills/terms from the JD absent in the resume.\n"
+            "7. Populate 'matched_keywords' with skills/terms from the JD present in the resume, and 'missing_keywords' with those absent.\n"
             "8. Verify: if work[] was empty, is your final score ≤ 78? If not, correct it.\n"
             "9. Return raw JSON only."
         )
@@ -529,7 +533,7 @@ def build_ats_user_message(
             "4. Apply hard caps from the Anti-Inflation Mandate BEFORE finalising the score.\n"
             "5. Populate 'strengths' with rubric-based qualitative strengths.\n"
             "6. Populate 'issues' with each failing rubric check, its check number, and its penalty.\n"
-            "7. Set 'missing_keywords' to an empty list [].\n"
+            "7. Set 'matched_keywords' and 'missing_keywords' to empty lists [].\n"
             "8. Verify: if work[] was empty, is your final score ≤ 78? If not, correct it.\n"
             "9. Return raw JSON only."
         )

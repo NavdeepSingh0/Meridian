@@ -22,5 +22,6 @@ export interface ATSResult {
   strengths: string[];
   issues: string[];
   has_job_description: boolean;
-  missing_keywords: KeywordGap[];
+  matched_keywords?: string[];
+  missing_keywords?: KeywordGap[];
 }

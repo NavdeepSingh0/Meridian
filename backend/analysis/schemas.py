@@ -37,8 +37,9 @@ class ATSResult(BaseModel):
     strengths: list[str]
     issues: list[str] = Field(description="Specific ATS problems found, e.g. 'No quantified achievements in Experience'")
     has_job_description: bool
-    # Empty list if has_job_description is false
-    missing_keywords: list[KeywordGap] = Field(description="Empty list if has_job_description is false")
+    # Empty lists if has_job_description is false
+    matched_keywords: list[str] = Field(description="Keywords from the JD that ARE present in the resume. Empty if has_job_description is false.")
+    missing_keywords: list[KeywordGap] = Field(description="Keywords from the JD that are MISSING from the resume. Empty if has_job_description is false.")
 
 
 # --- Smart Apply Suggestion ---
