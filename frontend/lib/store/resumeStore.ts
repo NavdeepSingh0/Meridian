@@ -201,6 +201,8 @@ interface ResumeStore {
   setPanelState: (state: PanelState) => void;
   setAtsResult: (result: ATSResult) => void;
   setCritiqueResult: (result: CritiqueResult) => void;
+  setHasDownloadedFreeResume: (value: boolean) => void;
+  setUser: (user: any) => void;
   resetToEditing: () => void;
 
   // Hydration
@@ -216,7 +218,7 @@ interface ResumeStore {
 export const useResumeStore = create<ResumeStore>((set) => ({
   // Initial State
   resumeData: initialResumeData,
-  selectedTemplateId: 'classic',
+  selectedTemplateId: 'modern',
   panelState: 'editing',
   atsResult: null,
   critiqueResult: null,
@@ -224,6 +226,8 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   fontSize: 10,
   documentMargin: 1,
   undoStack: [],
+  hasDownloadedFreeResume: false,
+  user: null,
 
   // Hydration
   hydratePersistedState: (state) => set((prev) => ({ ...prev, ...state })),
@@ -382,6 +386,9 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   setPanelState: (state) => set({ panelState: state }),
   setAtsResult: (result) => set({ atsResult: result }),
   setCritiqueResult: (result) => set({ critiqueResult: result }),
+  
+  setHasDownloadedFreeResume: (value) => set({ hasDownloadedFreeResume: value }),
+  setUser: (user) => set({ user }),
   resetToEditing: () => set({ panelState: 'editing', atsResult: null, critiqueResult: null }),
 }));
 
@@ -399,6 +406,7 @@ if (typeof window !== 'undefined') {
       useResumeStore.getState().hydratePersistedState({
         ...(parsed.resumeData && { resumeData: parsed.resumeData }),
         ...(parsed.selectedTemplateId && { selectedTemplateId: parsed.selectedTemplateId }),
+        ...(parsed.hasDownloadedFreeResume !== undefined && { hasDownloadedFreeResume: parsed.hasDownloadedFreeResume }),
         ...(typeof parsed.jobDescription === 'string' && { jobDescription: parsed.jobDescription }),
         ...(typeof parsed.fontSize === 'number' && { fontSize: parsed.fontSize }),
         ...(typeof parsed.documentMargin === 'number' && { documentMargin: parsed.documentMargin }),
@@ -416,7 +424,8 @@ if (typeof window !== 'undefined') {
       state.selectedTemplateId !== prevState.selectedTemplateId ||
       state.jobDescription !== prevState.jobDescription ||
       state.fontSize !== prevState.fontSize ||
-      state.documentMargin !== prevState.documentMargin
+      state.documentMargin !== prevState.documentMargin ||
+      state.hasDownloadedFreeResume !== prevState.hasDownloadedFreeResume
     ) {
       if (timeoutId) clearTimeout(timeoutId);
       
@@ -427,6 +436,7 @@ if (typeof window !== 'undefined') {
           jobDescription: state.jobDescription,
           fontSize: state.fontSize,
           documentMargin: state.documentMargin,
+          hasDownloadedFreeResume: state.hasDownloadedFreeResume,
         };
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));

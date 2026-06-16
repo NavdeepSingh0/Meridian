@@ -20,66 +20,66 @@
 
         /* ── Header ── */
         .header {
-            margin-bottom: 14pt;
+            margin-bottom: 14px;
         }
-        /* 2.4em = 24pt */
         h1 {
-            font-size: 24pt;
+            font-size: 22pt;
             font-weight: 300;
             letter-spacing: -0.5px;
-            margin: 0 0 3pt 0;
+            margin: 0 0 3px 0;
             color: #000;
             line-height: 1;
         }
-        /* 0.95em = 9.5pt */
         .label {
-            font-size: 9.5pt;
+            font-size: 10pt;
             color: #444;
-            margin: 0 0 8pt 0;
+            margin: 0 0 8px 0;
         }
-        /* 0.8em = 8pt */
         .contact-info {
-            font-size: 8pt;
+            font-size: 8.5pt;
             color: #666;
+        }
+        .contact-info span {
+            margin-right: 0;
         }
         .contact-sep {
             color: #bbb;
             margin: 0 5px;
         }
 
-        /* ── Summary — 0.88em = 8.8pt → 9pt ── */
+        /* ── Summary ── */
         .summary-text {
-            font-size: 9pt;
+            font-size: 9.5pt;
             color: #333;
-            margin: 0 0 12pt 0;
+            margin: 0 0 12px 0;
             line-height: 1.65;
             border-bottom: 1px solid #EBEBEB;
-            padding-bottom: 12pt;
+            padding-bottom: 12px;
         }
 
-        /* ── Section Titles — 0.62em = 6.2pt → 6pt ── */
+        /* ── Section Titles ── */
         h2 {
-            font-size: 6pt;
+            font-size: 6.5pt;
             font-weight: 700;
             border-bottom: 2px solid #111;
-            padding-bottom: 3pt;
+            padding-bottom: 3px;
             margin-top: 0;
-            margin-bottom: 8pt;
+            margin-bottom: 8px;
             color: #111;
             text-transform: uppercase;
             letter-spacing: 1.6px;
         }
 
-        /* ── Sections — 1.2em = 12pt ── */
+        /* ── Sections ── */
         .section {
-            margin-bottom: 12pt;
+            margin-bottom: 13px;
         }
 
-        /* ── Grid rows (work, projects, edu) — 1em = 10pt ── */
+        /* ── Grid rows (work, projects, edu) ── */
         .grid-item {
             width: 100%;
             overflow: hidden;
-            margin-bottom: 10pt;
+            margin-bottom: 9px;
         }
         .grid-item:last-child {
             margin-bottom: 0;
@@ -87,16 +87,15 @@
         .grid-row {
             width: 100%;
             overflow: hidden;
-            margin-bottom: 1pt;
+            margin-bottom: 1px;
         }
         .grid-left {
             float: left;
             max-width: 72%;
         }
-        /* 0.78em = 7.8pt → 8pt */
         .grid-right {
             float: right;
-            font-size: 8pt;
+            font-size: 8.5pt;
             color: #888;
             white-space: nowrap;
         }
@@ -105,45 +104,40 @@
             display: table;
             clear: both;
         }
-        /* 0.92em = 9.2pt → 9pt */
         .item-name {
-            font-size: 9pt;
+            font-size: 9.5pt;
             font-weight: 700;
             color: #111;
         }
-        /* 0.88em = 8.8pt → 9pt */
         .item-sub {
             font-size: 9pt;
             color: #555;
         }
-        /* 0.78em = 7.8pt → 8pt */
         .item-url {
             font-size: 8pt;
             color: #888;
-            margin-bottom: 2pt;
+            margin-bottom: 2px;
         }
-        /* 0.82em = 8.2pt → 8pt */
         .item-desc {
-            font-size: 8pt;
+            font-size: 9pt;
             color: #555;
             font-style: italic;
-            margin-bottom: 3pt;
+            margin-bottom: 3px;
         }
         ul {
-            margin: 2pt 0 0 0;
-            padding-left: 14pt;
+            margin: 2px 0 0 0;
+            padding-left: 14px;
         }
-        /* 0.85em = 8.5pt */
         li {
-            margin-bottom: 2pt;
-            font-size: 8.5pt;
+            margin-bottom: 2px;
+            font-size: 9pt;
             color: #333;
             line-height: 1.5;
         }
 
-        /* ── Skills — 0.85em = 8.5pt ── */
+        /* ── Skills ── */
         .skills-text {
-            font-size: 8.5pt;
+            font-size: 9pt;
             color: #333;
             line-height: 1.7;
         }
@@ -152,11 +146,11 @@
             font-weight: 600;
         }
 
-        /* ── Awards — 0.85em = 8.5pt ── */
+        /* ── Awards ── */
         .award-item {
-            font-size: 8.5pt;
+            font-size: 9pt;
             color: #333;
-            margin-bottom: 3pt;
+            margin-bottom: 3px;
             line-height: 1.5;
         }
     </style>
@@ -173,7 +167,7 @@
                 <span class="contact-sep">&middot;</span><span>{{ resume.basics.location.city }}{% if resume.basics.location.region %}, {{ resume.basics.location.region }}{% endif %}</span>
             {% endif %}
             {% for profile in resume.basics.profiles %}
-                <span class="contact-sep">&middot;</span><span><a href="{{ profile.url }}" style="color: inherit; text-decoration: none;">{{ profile.url|cut:"https://"|cut:"http://" }}</a></span>
+                <span class="contact-sep">&middot;</span><span><a href="https://{{ profile.url }}" style="color: inherit; text-decoration: none;">{{ profile.url }}</a></span>
             {% endfor %}
         </div>
     </div>
@@ -210,7 +204,7 @@
             <div class="grid-row clearfix">
                 <div class="grid-left">
                     <span class="item-name">{{ project.name }}</span>
-                    {% if project.url %}<span class="item-url"> &mdash; <a href="{{ project.url }}" style="color: #888; text-decoration: none;">{{ project.url|cut:"https://"|cut:"http://" }}</a></span>{% endif %}
+                    {% if project.url %}<span class="item-url"> &mdash; <a href="https://{{ project.url }}" style="color: #888; text-decoration: none;">{{ project.url }}</a></span>{% endif %}
                 </div>
                 {% if project.endDate %}<div class="grid-right">{{ project.endDate }}</div>{% endif %}
             </div>
@@ -227,7 +221,7 @@
     <div class="section">
         <h2>Education</h2>
         {% for edu in resume.education %}
-        <div class="grid-item" style="margin-bottom: 5pt;">
+        <div class="grid-item" style="margin-bottom: 5px;">
             <div class="grid-row clearfix">
                 <div class="grid-left">
                     <span class="item-name">{{ edu.studyType }} {{ edu.area }}</span>
@@ -254,11 +248,12 @@
     <div class="section">
         <h2>Certifications</h2>
         {% for cert in resume.certificates %}
-        <div class="grid-item" style="margin-bottom: 4pt;">
+        <div class="grid-item" style="margin-bottom: 4px;">
             <div class="grid-row clearfix">
                 <div class="grid-left">
                     <span class="item-name">{{ cert.name }}</span>
                     {% if cert.issuer %}<span class="item-sub"> &mdash; {{ cert.issuer }}</span>{% endif %}
+                    {% if cert.url %} &ndash; <a href="{{ cert.url }}" style="color: #555; font-size: 8pt; text-decoration: none;">{{ cert.url }}</a>{% endif %}
                 </div>
                 {% if cert.date %}<div class="grid-right">{{ cert.date }}</div>{% endif %}
             </div>

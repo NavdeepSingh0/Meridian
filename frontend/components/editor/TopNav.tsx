@@ -4,6 +4,8 @@ import { useResumeStore } from '../../lib/store/resumeStore';
 import { useExportPdf } from '../../lib/hooks/useAnalysis';
 import { useSaveResume } from '../../lib/hooks/useResumes';
 import styles from '../../app/builder/builder.module.css';
+import AuthModal from '../auth/AuthModal';
+import { createClient } from '../../lib/supabase/client';
 
 interface TopNavProps {
   activeTemplate: string;
@@ -16,10 +18,21 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { resumeData } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const supabase = createClient();
   const exportPdfMutation = useExportPdf();
   const saveResumeMutation = useSaveResume();
 
-  const handleExportClick = () => {
+  const handleExportClick = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const { hasDownloadedFreeResume, setHasDownloadedFreeResume } = useResumeStore.getState();
+
+    // If they aren't logged in and have already used their free download, block them.
+    if (!session && hasDownloadedFreeResume) {
+      setShowAuthModal(true);
+      return;
+    }
+
     exportPdfMutation.mutate({ resumeData, templateName: activeTemplate }, {
       onSuccess: (blob) => {
         const url = URL.createObjectURL(blob);
@@ -30,6 +43,11 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        // Mark that they used their free resume
+        if (!session && !hasDownloadedFreeResume) {
+          setHasDownloadedFreeResume(true);
+        }
       },
       onError: (err) => {
         console.error("Export failed", err);
@@ -38,7 +56,14 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
     });
   };
 
-  const handleSaveToCloud = () => {
+  const handleSaveToCloud = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Cloud save strictly requires login
+    if (!session) {
+      setShowAuthModal(true);
+      return;
+    }
     saveResumeMutation.mutate({
       title: documentName || 'My Resume',
       template_id: activeTemplate,
@@ -206,6 +231,15 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
           )}
         </button>
       </div>
+
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onSuccess={() => {
+          setShowAuthModal(false);
+          alert("Successfully authenticated! You can now resume your action.");
+        }}
+      />
     </header>
   );
 }
