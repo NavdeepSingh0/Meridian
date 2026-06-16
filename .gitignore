@@ -52,3 +52,20 @@ backend/check_models_http.py
 backend/test_modern_xhtml2pdf.pdf
 sample/
 
+# Cleanup Deployment Docs
+ARCHITECTURE.md
+Claude-Professional project documentation and planning workflow.md
+LANDING_PAGE_PROMPT.md
+PROGRESS_HANDOFF_SLICES_2_4.md
+SLICE_1_BRIEF.md
+TASK.md
+backend-meridian-SKILL.md
+update_features.py
+backend/analysis/templates/analysis/pdf/*.backup.html
+frontend/AGENTS.md
+frontend/CLAUDE.md
+frontend/app/kimi/v1/app/README.md
+frontend/app/kimi/v1/app/info.md
+frontend/app/kimi/v2/app/README.md
+frontend/app/kimi/v2/app/info.md
+*.html
