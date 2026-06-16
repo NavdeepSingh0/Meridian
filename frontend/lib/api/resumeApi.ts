@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { ResumeData } from '../types/resume';
 
-const API_BASE_URL = 'http://localhost:8000/api/resumes';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/resumes`
+  : 'http://localhost:8000/api/resumes';
 
 // Axios instance with credentials to send session cookies
 const apiClient = axios.create({

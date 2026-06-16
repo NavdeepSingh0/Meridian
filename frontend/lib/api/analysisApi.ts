@@ -2,8 +2,9 @@ import axios from 'axios';
 import { ResumeData } from '../types/resume';
 import { ATSResult, CritiqueResult } from '../types/analysis';
 
-// We assume the Django backend is running on 8000
-const API_BASE_URL = 'http://localhost:8000/api/analysis';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/analysis`
+  : 'http://localhost:8000/api/analysis';
 
 export const analysisApi = {
   critique: async (data: ResumeData): Promise<CritiqueResult> => {
