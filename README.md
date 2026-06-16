@@ -4,7 +4,7 @@ An end-to-end, production-grade resume builder featuring real-time AI critique, 
 
 ---
 
-## 🚀 Milestones Completed & Rubric Mapping
+##  Milestones Completed & Rubric Mapping
 
 All core milestones and bonus objectives have been fully completed:
 
@@ -26,7 +26,7 @@ All core milestones and bonus objectives have been fully completed:
 
 ---
 
-## 🎨 Key Features & Premium UX
+##  Key Features & Premium UX
 
 - **Real-Time Canvas Synchrony:** Swapping templates, adjusting margins, or updating content renders instantly on the resume preview canvas.
 - **Dynamic Context Highlighting:** When the ATS scanner identifies missing sections or keyword gaps, those sections are highlighted on the canvas with interactive overlays so you know exactly where to make edits.
@@ -34,7 +34,7 @@ All core milestones and bonus objectives have been fully completed:
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Frontend
 - **Framework:** Next.js (App Router)
@@ -51,7 +51,7 @@ All core milestones and bonus objectives have been fully completed:
 
 ---
 
-## 📐 Architectural Decisions & Trade-offs
+##  Architectural Decisions & Trade-offs
 
 ### 1. Sync WSGI vs. Async/SSE Streams
 The AI endpoints (`/api/analysis/critique/`) use standard synchronous Django views (WSGI) rather than streaming Server-Sent Events (SSE) over ASGI.
@@ -70,7 +70,7 @@ Every response from Gemini passes through a strict Pydantic parsing and validati
 
 ---
 
-## 💻 Setup & Running Locally
+##  Setup & Running Locally
 
 ### Prerequisites
 - Node.js (v18+)
