@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     GEMINI_API_KEY=(str, ""),
+    GROQ_API_KEY=(str, ""),
 )
 
 # Read .env from the api root (one level up from config/)
@@ -87,4 +88,5 @@ REST_FRAMEWORK = {
 
 # Gemini API key — read from environment. Empty string = Demo Mode.
 GEMINI_API_KEY: str = env("GEMINI_API_KEY")
+GROQ_API_KEY: str = env("GROQ_API_KEY")
 # Trigger auto-reloader to pick up the new .env file

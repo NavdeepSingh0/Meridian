@@ -11,12 +11,11 @@ import logging
 from typing import Any, Optional, TypeVar, Type
 
 from pydantic import BaseModel, ValidationError
-from google.genai.errors import APIError
-from google.genai.types import GenerateContentConfig
+from groq import GroqError, APIError
 
 from analysis.schemas import CritiqueResult, ATSResult
 from analysis.mock_data import get_mock_critique, get_mock_ats_result
-from analysis.gemini_client import client, is_demo_mode, SAFETY_SETTINGS
+from analysis.groq_client import client, is_demo_mode
 from analysis.prompts import (
     CRITIQUE_SYSTEM_PROMPT,
     ATS_SYSTEM_PROMPT,
@@ -60,71 +59,81 @@ def _call_gemini_and_parse(
     response_schema: Type[T]
 ) -> T | None:
     """
-    Core defensive pipeline for calling Gemini and parsing structured output.
+    Core defensive pipeline for calling Groq and parsing structured output.
     Returns the parsed Pydantic model on success.
     Returns None on conditions that should trigger a mock fallback (429, parse failure).
     Raises specific Exceptions for conditions that should surface to the frontend (Safety, 504, 400).
     """
-    config = GenerateContentConfig(
-        system_instruction=system_instruction,
-        response_mime_type="application/json",
-        response_schema=response_schema,
-        safety_settings=SAFETY_SETTINGS,
-        temperature=0.2, # Low temp for structured extraction/evaluation
-    )
-    
+    system_instruction += f"\n\nYou must output a JSON object that strictly adheres to the following JSON schema:\n{json.dumps(response_schema.model_json_schema(), indent=2)}"
     max_retries = 3
     base_delay = 2
     
     for attempt in range(max_retries):
         try:
-            response = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=user_message,
-                config=config,
+            response = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_instruction,
+                    },
+                    {
+                        "role": "user",
+                        "content": user_message,
+                    }
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.2, # Low temp for structured extraction/evaluation
+                response_format={"type": "json_object"},
             )
             break # Success, exit retry loop
         except APIError as e:
-            code = getattr(e, "code", None)
+            code = getattr(e, "status_code", getattr(e, "code", None))
             if code in [503, 504, 429]:
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    logger.warning(f"Gemini API {code} error. Retrying in {delay}s...")
+                    logger.warning(f"Groq API {code} error. Retrying in {delay}s...")
                     time.sleep(delay)
                     continue
-                logger.error(f"Gemini API {code} error after {max_retries} attempts.")
+                logger.error(f"Groq API {code} error after {max_retries} attempts.")
                 raise TimeoutOrUnavailableError()
             elif code == 400:
-                logger.error(f"Gemini API Bad Request (400): {getattr(e, 'message', str(e))}")
+                logger.error(f"Groq API Bad Request (400): {getattr(e, 'message', str(e))}")
                 raise BadRequestError()
             else:
-                logger.error(f"Unknown Gemini API Error {code}: {str(e)}")
+                logger.error(f"Unknown Groq API Error {code}: {str(e)}")
                 raise TimeoutOrUnavailableError()
+        except GroqError as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"Network timeout or unexpected error: {str(e)}. Retrying in {delay}s...")
+                time.sleep(delay)
+                continue
+            logger.error(f"Network timeout or unexpected error calling Groq: {str(e)}")
+            raise TimeoutOrUnavailableError()
         except Exception as e:
             if attempt < max_retries - 1:
                 delay = base_delay * (2 ** attempt)
                 logger.warning(f"Network timeout or unexpected error: {str(e)}. Retrying in {delay}s...")
                 time.sleep(delay)
                 continue
-            logger.error(f"Network timeout or unexpected error calling Gemini: {str(e)}")
+            logger.error(f"Network timeout or unexpected error calling Groq: {str(e)}")
             raise TimeoutOrUnavailableError()
 
     # 1. Check finish_reason for Safety block
-    if not response.candidates:
-        logger.error("Gemini returned no candidates.")
+    if not response.choices:
+        logger.error("Groq returned no choices.")
         return None # Fallback
         
-    candidate = response.candidates[0]
-    finish_reason = getattr(candidate, "finish_reason", None)
+    choice = response.choices[0]
+    finish_reason = getattr(choice, "finish_reason", None)
     
-    # In google-genai, finish_reason is an enum or string. Check string representation.
-    if str(finish_reason) == "SAFETY" or str(finish_reason) == "FinishReason.SAFETY":
+    if str(finish_reason) == "content_filter":
         raise SafetyError("Content flagged by safety filters")
 
     # 2. Extract text and strip markdown
-    raw_text = response.text
+    raw_text = choice.message.content
     if not raw_text:
-        logger.error("Gemini returned empty text despite no safety block.")
+        logger.error("Groq returned empty text.")
         return None
         
     cleaned_text = _clean_json_string(raw_text)
@@ -135,7 +144,7 @@ def _call_gemini_and_parse(
         validated_model = response_schema.model_validate(parsed_dict)
         return validated_model
     except (json.JSONDecodeError, ValidationError) as e:
-        logger.error(f"Failed to parse or validate Gemini output: {str(e)}\nRaw output: {raw_text}")
+        logger.error(f"Failed to parse or validate Groq output: {str(e)}\nRaw output: {raw_text}")
         return None # Trigger mock fallback
 
 
