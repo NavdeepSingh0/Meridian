@@ -241,7 +241,7 @@ def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
         # Generate the PDF bytes
         pdf_bytes = HTML(string=html_string).write_pdf()
         return pdf_bytes
-    except (ImportError, OSError):
+    except Exception as e:
         # Fallback if WeasyPrint or GTK3 isn't available
         try:
             from xhtml2pdf import pisa
