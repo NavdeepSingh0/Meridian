@@ -241,7 +241,7 @@ def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
         # Generate the PDF bytes
         pdf_bytes = HTML(string=html_string).write_pdf()
         return pdf_bytes
-    except Exception as e:
+    except (ImportError, OSError) as e:
         logger.warning(f"WeasyPrint failed ({str(e)}). Falling back to xhtml2pdf.")
         # Fallback if WeasyPrint or GTK3 isn't available
         try:
