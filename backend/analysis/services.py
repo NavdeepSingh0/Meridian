@@ -224,7 +224,7 @@ def apply_suggestion(section_name: str, section_data: Any, suggestion: str) -> s
 
 
 
-def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
+def render_resume_pdf(resume_data: dict, template_id: str, settings: dict = None) -> bytes:
     """
     Renders the given resume data into a PDF byte string.
     Uses Django's template engine to render HTML, then WeasyPrint to create PDF.
@@ -232,9 +232,23 @@ def render_resume_pdf(resume_data: dict, template_id: str) -> bytes:
     """
     from django.template.loader import render_to_string
     
+    if settings is None:
+        settings = {"font_size": 10, "document_margin": 1}
+        
+    try:
+        margin_mult = float(settings.get("document_margin", 1))
+    except (ValueError, TypeError):
+        margin_mult = 1.0
+        
+    computed = {
+        "padding_base": margin_mult * 36,
+        "padding_modern_left": margin_mult * 18,
+        "padding_modern_right": margin_mult * 22,
+    }
+        
     # Render the appropriate template
     template_name = f"analysis/pdf/{template_id}.html"
-    html_string = render_to_string(template_name, {"resume": resume_data})
+    html_string = render_to_string(template_name, {"resume": resume_data, "settings": settings, "computed": computed})
     
     try:
         from weasyprint import HTML

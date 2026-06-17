@@ -16,7 +16,7 @@ interface TopNavProps {
 
 export default function TopNav({ activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const { resumeData } = useResumeStore();
+  const { resumeData, fontSize, documentMargin } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const supabase = createClient();
@@ -33,7 +33,11 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
       return;
     }
 
-    exportPdfMutation.mutate({ resumeData, templateName: activeTemplate }, {
+    exportPdfMutation.mutate({ 
+      resumeData, 
+      templateName: activeTemplate,
+      settings: { font_size: fontSize, document_margin: documentMargin }
+    }, {
       onSuccess: (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

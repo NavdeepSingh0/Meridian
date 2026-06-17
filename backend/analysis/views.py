@@ -131,6 +131,7 @@ class ExportPDFView(APIView):
     def post(self, request, *args, **kwargs):
         resume_data = request.data.get("resume_data")
         template_id = request.data.get("template_id")
+        settings = request.data.get("settings", {"font_size": 10, "document_margin": 1})
         
         if not resume_data or not isinstance(resume_data, dict):
             return Response({"detail": "Invalid or missing resume_data"}, status=status.HTTP_400_BAD_REQUEST)
@@ -145,7 +146,7 @@ class ExportPDFView(APIView):
             
         try:
             from analysis.services import render_resume_pdf
-            pdf_bytes = render_resume_pdf(resume_data, template_id)
+            pdf_bytes = render_resume_pdf(resume_data, template_id, settings)
             
             # Use Django's HttpResponse to send bytes natively
             from django.http import HttpResponse

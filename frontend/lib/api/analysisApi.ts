@@ -22,10 +22,11 @@ export const analysisApi = {
     return response.data;
   },
 
-  exportPdf: async (data: ResumeData, templateName: string = 'classic'): Promise<Blob> => {
+  exportPdf: async (data: ResumeData, templateName: string = 'classic', settings?: any): Promise<Blob> => {
     const response = await axios.post(`${API_BASE_URL}/export-pdf/`, {
       resume_data: data,
       template_id: templateName,
+      settings: settings || { font_size: 10, document_margin: 1 }
     }, {
       responseType: 'blob'
     });

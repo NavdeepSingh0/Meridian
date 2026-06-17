@@ -17,8 +17,8 @@ export const useAtsScore = () => {
 
 export const useExportPdf = () => {
   return useMutation({
-    mutationFn: ({ resumeData, templateName }: { resumeData: ResumeData; templateName: string }) => 
-      analysisApi.exportPdf(resumeData, templateName),
+    mutationFn: ({ resumeData, templateName, settings }: { resumeData: ResumeData; templateName: string; settings?: any }) => 
+      analysisApi.exportPdf(resumeData, templateName, settings),
   });
 };
 
