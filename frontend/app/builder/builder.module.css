@@ -258,14 +258,16 @@
 
 .paperCard {
   background: var(--color-base);
+  background-image: linear-gradient(to bottom, transparent 1121px, rgba(234, 67, 53, 0.5) 1121px, rgba(234, 67, 53, 0.5) 1123px);
+  background-size: 100% 1123px;
   border-radius: 2px;
   box-shadow: var(--shadow-card-elevated);
-  width: 100%;
-  max-width: 800px;
-  min-height: 1056px;
+  width: 794px; /* Exact A4 width at 96 DPI */
+  min-height: 1123px; /* Exact A4 height at 96 DPI */
   position: relative;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .floatingToolbar {
