@@ -5,7 +5,7 @@ jsonschema==4.23.0
 google-genai==0.8.0
 pydantic==2.9.2
 groq==1.4.0
-weasyprint==62.3
+weasyprint==57.2
 xhtml2pdf==0.2.17
 gunicorn==22.0.0
 psycopg2-binary>=2.9.0
