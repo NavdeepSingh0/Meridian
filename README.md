@@ -6,7 +6,15 @@ An end-to-end, production-grade resume builder featuring real-time AI critique, 
 
 ## 🎥 Video Demo & Walkthrough
 
-> **[Click here to watch the full Loom Walkthrough Video]**(insert_your_loom_link_here)
+> 
+
+https://github.com/user-attachments/assets/d6ab7154-8095-4e5b-83e3-80ccfe3ead68
+
+
+
+
+
+
 
 ---
 
