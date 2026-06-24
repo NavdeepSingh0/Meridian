@@ -24,6 +24,7 @@ export interface Basics {
 export interface Work {
   name: string;
   position: string;
+  location?: string;
   startDate: string;
   endDate: string;
   summary: string;

@@ -57,14 +57,25 @@ export default function WorkForm() {
             />
           </div>
 
-          <div className={styles.inputGroup}>
-            <label className={styles.inputLabel}>Position</label>
-            <input 
-              className={styles.inputField}
-              value={job.position}
-              onChange={(e) => updateWorkEntry(index, 'position', e.target.value)}
-              placeholder="Senior Designer"
-            />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div className={styles.inputGroup} style={{ flex: 1 }}>
+              <label className={styles.inputLabel}>Position</label>
+              <input 
+                className={styles.inputField}
+                value={job.position}
+                onChange={(e) => updateWorkEntry(index, 'position', e.target.value)}
+                placeholder="Senior Designer"
+              />
+            </div>
+            <div className={styles.inputGroup} style={{ flex: 1 }}>
+              <label className={styles.inputLabel}>Location</label>
+              <input 
+                className={styles.inputField}
+                value={job.location || ''}
+                onChange={(e) => updateWorkEntry(index, 'location', e.target.value)}
+                placeholder="San Francisco, CA (or Remote)"
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>

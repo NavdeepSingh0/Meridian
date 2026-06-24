@@ -8,6 +8,7 @@ import MinimalTemplate from '../../components/templates/MinimalTemplate';
 import LeftSidebar from '../../components/editor/LeftSidebar';
 import AnalysisPanel from '../../components/ai/AnalysisPanel';
 import TopNav from '../../components/editor/TopNav';
+import OnboardingModal from '../../components/editor/OnboardingModal';
 import { useResumeStore } from '../../lib/store/resumeStore';
 import { useIsMutating } from '@tanstack/react-query';
 import { useGetResume, useSaveResume } from '../../lib/hooks/useResumes';
@@ -18,10 +19,11 @@ interface HighlightedSection {
 }
 
 function BuilderPageContent() {
-  const [activeSection, setActiveSection] = useState<string>('Basics');
+  const [activeSection, setActiveSection] = useState<string>('');
   const [documentName, setDocumentName] = useState('');
   const [zoom, setZoom] = useState(100);
   const [isClient, setIsClient] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const canvasRef = React.useRef<HTMLElement>(null);
   
   const { panelState, atsResult, critiqueResult, selectedTemplateId, setSelectedTemplateId, fontSize, documentMargin, resumeData, currentResumeId, loadResumeFromDB } = useResumeStore();
@@ -170,6 +172,8 @@ function BuilderPageContent() {
 
         <AnalysisPanel />
       </div>
+
+      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
     </div>
   );
 }

@@ -244,9 +244,11 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
             {work.map((job: any, idx: any) => (
               <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1.1em' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.12em' }}>
-                  <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{job.position}</h3>
-                  <span style={{ fontSize: '0.75em', color: '#777', fontWeight: 500, flexShrink: 0, marginLeft: '1em' }}>
-                    {job.startDate}{job.startDate && job.endDate ? ' – ' : ''}{job.endDate}
+                  <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>
+                    {job.position} {job.location && <span style={{ fontWeight: 400, color: '#555' }}>— {job.location}</span>}
+                  </h3>
+                  <span style={{ fontSize: '0.82em', fontWeight: 600, color: 'var(--color-primary)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                    {job.startDate} {job.startDate && job.endDate ? '–' : ''} {job.endDate}
                   </span>
                 </div>
                 <div style={{ fontSize: '0.85em', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '0.4em' }}>{job.name}</div>
@@ -267,8 +269,10 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
               <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1.1em' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.12em' }}>
                   <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{proj.name}</h3>
-                  {proj.endDate && (
-                    <span style={{ fontSize: '0.75em', color: '#777', fontWeight: 500, flexShrink: 0, marginLeft: '1em' }}>{proj.endDate}</span>
+                  {(proj.startDate || proj.endDate) && (
+                    <span style={{ fontSize: '0.82em', fontWeight: 600, color: 'var(--color-primary)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                      {proj.startDate} {proj.startDate && proj.endDate ? '–' : ''} {proj.endDate}
+                    </span>
                   )}
                 </div>
                 {proj.description && (

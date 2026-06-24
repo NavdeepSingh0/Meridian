@@ -175,7 +175,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
       ...state.resumeData,
       work: [
         ...state.resumeData.work,
-        { name: '', position: '', startDate: '', endDate: '', summary: '', highlights: [] }
+        { name: '', position: '', location: '', startDate: '', endDate: '', summary: '', highlights: [] }
       ]
     }
   })),
@@ -217,7 +217,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
       ...state.resumeData,
       projects: [
         ...state.resumeData.projects,
-        { name: '', description: '', url: '', highlights: [], keywords: [] }
+        { name: '', description: '', url: '', startDate: '', endDate: '', highlights: [], keywords: [] }
       ]
     }
   })),

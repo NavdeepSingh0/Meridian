@@ -138,11 +138,13 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
             <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.15em' }}>
                 <div>
-                  <strong style={{ fontSize: '0.92em', color: '#111' }}>{job.position}</strong>
-                  {job.name && <span style={{ fontSize: '0.88em', color: '#555' }}> — {job.name}</span>}
+                  <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', display: 'inline', margin: 0 }}>
+                    {job.position} {job.location && <span style={{ fontWeight: 400, color: '#555' }}>— {job.location}</span>}
+                  </h3>
+                  <span style={{ fontSize: '0.9em', color: '#333', marginLeft: '0.4em' }}>at {job.name}</span>
                 </div>
-                <span style={{ fontSize: '0.78em', color: '#888', whiteSpace: 'nowrap' }}>
-                  {job.startDate}{job.startDate && job.endDate ? ' – ' : ''}{job.endDate}
+                <span style={{ fontSize: '0.85em', color: '#555', whiteSpace: 'nowrap' }}>
+                  {job.startDate} {job.startDate && job.endDate ? '–' : ''} {job.endDate}
                 </span>
               </div>
               {job.highlights.length > 0 && (
@@ -166,15 +168,17 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
             <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.12em' }}>
                 <div>
-                  <strong style={{ fontSize: '0.92em', color: '#111' }}>{proj.name}</strong>
+                  <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', display: 'inline', margin: 0 }}>{proj.name}</h3>
                   {proj.url && (
-                    <span style={{ fontSize: '0.78em', color: '#888', marginLeft: '0.5em' }}>
+                    <span style={{ fontSize: '0.85em', color: '#888', marginLeft: '0.5em' }}>
                       {proj.url.replace(/^https?:\/\//, '')}
                     </span>
                   )}
                 </div>
-                {proj.endDate && (
-                  <span style={{ fontSize: '0.78em', color: '#888', whiteSpace: 'nowrap' }}>{proj.endDate}</span>
+                {(proj.startDate || proj.endDate) && (
+                  <span style={{ fontSize: '0.85em', color: '#555', whiteSpace: 'nowrap' }}>
+                    {proj.startDate} {proj.startDate && proj.endDate ? '–' : ''} {proj.endDate}
+                  </span>
                 )}
               </div>
               {proj.description && (

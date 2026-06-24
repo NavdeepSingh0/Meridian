@@ -8,6 +8,7 @@ import AuthModal from '../auth/AuthModal';
 import { useUserStore } from '../../lib/store/userStore';
 import { auth } from '../../lib/firebase/client';
 import { signOut } from 'firebase/auth';
+import Logo from '../shared/Logo';
 
 interface TopNavProps {
   activeTemplate: string;
@@ -123,17 +124,8 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
   return (
     <header className={styles.saasTopNav}>
       <div className={styles.builderTopNav}>
-        <Link href="/" className={styles.builderBrand}>
-          {/* The Meridian Navigational Monogram */}
-          <div className="relative w-6 h-6 flex items-center justify-center select-none" aria-hidden="true">
-            <div className="absolute inset-0 rounded-full border border-dashed" style={{ borderColor: 'var(--color-primary)', opacity: 0.6 }}></div>
-            <svg className="w-3 h-3 absolute" style={{ color: 'var(--color-ink)', transform: 'rotate(45deg) translate(-1px, 1px)' }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <span className={styles.brandWordmark}>
-            Meridian <span className={styles.brandCV}>CV</span>
-          </span>
+        <Link href="/" className={styles.builderBrand} style={{ textDecoration: 'none' }}>
+          <Logo width={120} />
         </Link>
         
         <div className={styles.breadcrumbSeparator}></div>

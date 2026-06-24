@@ -75,6 +75,27 @@ export default function ProjectsForm() {
             />
           </div>
 
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div className={styles.inputGroup} style={{ flex: 1 }}>
+              <label className={styles.inputLabel}>Start Date</label>
+              <input 
+                className={styles.inputField}
+                value={project.startDate || ''}
+                onChange={(e) => updateProjectEntry(index, 'startDate', e.target.value)}
+                placeholder="Jan 2021"
+              />
+            </div>
+            <div className={styles.inputGroup} style={{ flex: 1 }}>
+              <label className={styles.inputLabel}>End Date</label>
+              <input 
+                className={styles.inputField}
+                value={project.endDate || ''}
+                onChange={(e) => updateProjectEntry(index, 'endDate', e.target.value)}
+                placeholder="Present"
+              />
+            </div>
+          </div>
+
           <div className={styles.inputGroup}>
             <label className={styles.inputLabel}>Description</label>
             <textarea 
