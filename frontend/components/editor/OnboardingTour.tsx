@@ -22,6 +22,20 @@ export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
       skipBeacon: true,
     },
     {
+      target: '.tour-documents-link',
+      placement: 'bottom',
+      title: 'Your Documents',
+      content: 'All your saved resumes live here. You can manage them in the Documents section.',
+      skipBeacon: true,
+    },
+    {
+      target: '.tour-import-btn',
+      placement: 'bottom',
+      title: 'Import an Existing Resume',
+      content: 'Already have a PDF? Upload it here and we will extract the details for you automatically.',
+      skipBeacon: true,
+    },
+    {
       target: '.tour-left-sidebar',
       placement: 'right',
       title: 'Fill Your Details',
@@ -67,18 +81,25 @@ export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
       steps={steps}
       run={run}
       onEvent={handleJoyrideCallback}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       styles={{
+        options: {
+          primaryColor: '#64B6AC',
+          zIndex: 10000,
+          textColor: '#2D3A3A',
+        },
         tooltip: {
           fontFamily: 'var(--font-sans)',
           borderRadius: '12px',
         },
         buttonPrimary: {
           borderRadius: '6px',
+          backgroundColor: '#64B6AC',
         },
         buttonBack: {
           color: '#4A6260',
         }
-      }}
+      } as any}
     />
   );
 }

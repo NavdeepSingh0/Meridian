@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useResumeStore } from '../../lib/store/resumeStore';
-import { useExportPdf } from '../../lib/hooks/useAnalysis';
+import { useExportPdf, useParsePdf } from '../../lib/hooks/useAnalysis';
 import { useSaveResume } from '../../lib/hooks/useResumes';
 import styles from '../../app/builder/builder.module.css';
 import AuthModal from '../auth/AuthModal';
@@ -23,6 +23,7 @@ export default function TopNav({ activeTemplate, documentName, setDocumentName }
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { firebaseUser, profile } = useUserStore();
   const exportPdfMutation = useExportPdf();
+  const parsePdfMutation = useParsePdf();
   const saveResumeMutation = useSaveResume();
   const [toastMsg, setToastMsg] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -36,6 +37,19 @@ export default function TopNav({ activeTemplate, documentName, setDocumentName }
     await signOut(auth);
     setShowUserMenu(false);
     showToast("Signed out successfully");
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const data = await parsePdfMutation.mutateAsync(file);
+      useResumeStore.getState().loadResumeFromDB(data.resume_data, null);
+      showToast("PDF parsed successfully!");
+    } catch (err) {
+      console.error("Failed to parse PDF", err);
+      showToast("Failed to parse PDF", "error");
+    }
   };
 
   const handleExportClick = async () => {
@@ -131,7 +145,7 @@ export default function TopNav({ activeTemplate, documentName, setDocumentName }
         
         <div className={styles.builderBreadcrumb}>
           <span className={`material-symbols-outlined ${styles.breadcrumbIcon}`}>description</span>
-          <Link href="/documents" className={styles.breadcrumbText} style={{ textDecoration: 'none' }}>Documents</Link>
+          <Link href="/documents" className={`${styles.breadcrumbText} tour-documents-link`} style={{ textDecoration: 'none' }}>Documents</Link>
           <span className={`material-symbols-outlined ${styles.breadcrumbIcon}`} style={{ fontSize: '16px' }}>chevron_right</span>
           
           <div className={styles.documentNameContainer}>
@@ -147,7 +161,27 @@ export default function TopNav({ activeTemplate, documentName, setDocumentName }
         </div>
       </div>
 
-      <div className={styles.builderCenter}>
+      <div className={styles.builderCenter} style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ position: 'relative' }}>
+          <input 
+            type="file" 
+            accept="application/pdf"
+            onChange={handleFileUpload}
+            id="pdf-upload"
+            style={{ display: 'none' }}
+          />
+          <label 
+            htmlFor="pdf-upload"
+            className="tour-import-btn"
+            style={{ 
+              background: 'transparent', border: '1px solid var(--color-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '4px' 
+            }}
+          >
+            {parsePdfMutation.isPending ? 'Parsing...' : 'Import PDF'}
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>upload_file</span>
+          </label>
+        </div>
+
         <button 
           onClick={() => {
             localStorage.removeItem('meridian_tour_completed');
