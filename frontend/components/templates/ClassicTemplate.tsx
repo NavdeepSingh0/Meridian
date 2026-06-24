@@ -74,7 +74,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
   const skillsProps = getHighlightProps('skills');
   const certProps = getHighlightProps('certificates');
 
-  const profileStr = basics.profiles?.map(p => {
+  const profileStr = basics.profiles?.map((p: any) => {
     const clean = p.url.replace(/^https?:\/\//, '');
     return `${p.network}: ${clean}`;
   }).join('  ·  ');

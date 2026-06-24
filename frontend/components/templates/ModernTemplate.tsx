@@ -160,7 +160,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
                 <span>{basics.location.city}{basics.location.region ? `, ${basics.location.region}` : ''}</span>
               </div>
             )}
-            {basics.profiles?.map((p, i) => (
+            {basics.profiles?.map((p: any, i: any) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5em' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '0.95em', color: 'var(--color-primary)', flexShrink: 0, marginTop: '0.05em' }}>link</span>
                 <span style={{ wordBreak: 'break-all' }}>{p.url.replace(/^https?:\/\//, '')}</span>

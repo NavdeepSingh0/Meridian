@@ -77,7 +77,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
     basics.email,
     basics.phone,
     basics.location?.city ? `${basics.location.city}${basics.location.region ? `, ${basics.location.region}` : ''}` : '',
-    ...(basics.profiles?.map(p => p.url.replace(/^https?:\/\//, '')) ?? []),
+    ...(basics.profiles?.map((p: any) => p.url.replace(/^https?:\/\//, '')) ?? []),
   ].filter(Boolean);
 
   return (
