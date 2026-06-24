@@ -12,12 +12,11 @@ import Logo from '../shared/Logo';
 
 interface TopNavProps {
   activeTemplate: string;
-  setActiveTemplate: (t: string) => void;
   documentName: string;
   setDocumentName: (name: string) => void;
 }
 
-export default function TopNav({ activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
+export default function TopNav({ activeTemplate, documentName, setDocumentName }: TopNavProps) {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { resumeData, fontSize, documentMargin, currentResumeId, setCurrentResumeId } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
@@ -149,10 +148,16 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
       </div>
 
       <div className={styles.builderCenter}>
-        <a href="#" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-primary)' }}>
+        <button 
+          onClick={() => {
+            localStorage.removeItem('meridian_tour_completed');
+            window.location.reload();
+          }}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-primary)' }}
+        >
           How it Works 
           <span className="material-symbols-outlined" style={{ fontSize: '14px', background: 'var(--color-primary)', color: 'white', borderRadius: '50%', padding: '1px' }}>question_mark</span>
-        </a>
+        </button>
       </div>
 
       <div className={styles.builderActions}>
@@ -233,7 +238,7 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
         <button
           onClick={handleExportClick}
           disabled={exportPdfMutation.isPending}
-          className="btn-primary-nav" style={{ padding: '6px 14px', opacity: exportPdfMutation.isPending ? 0.7 : 1 }}
+          className="btn-primary-nav tour-export-btn" style={{ padding: '6px 14px', opacity: exportPdfMutation.isPending ? 0.7 : 1 }}
         >
           {exportPdfMutation.isPending ? (
             <>

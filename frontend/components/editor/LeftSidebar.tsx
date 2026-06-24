@@ -98,7 +98,7 @@ export default function LeftSidebar({ activeSection, setActiveSection, isLocked 
 
   return (
     <aside
-      className={styles.saasLeftSidebar}
+      className={`${styles.saasLeftSidebar} tour-left-sidebar`}
       style={{ opacity: isLocked ? 0.5 : 1, pointerEvents: isLocked ? 'none' : 'auto', transition: 'all 0.3s ease' }}
     >
       <div className={styles.sideTabBarContainer}>

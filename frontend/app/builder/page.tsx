@@ -8,7 +8,7 @@ import MinimalTemplate from '../../components/templates/MinimalTemplate';
 import LeftSidebar from '../../components/editor/LeftSidebar';
 import AnalysisPanel from '../../components/ai/AnalysisPanel';
 import TopNav from '../../components/editor/TopNav';
-import OnboardingModal from '../../components/editor/OnboardingModal';
+import OnboardingTour from '../../components/editor/OnboardingTour';
 import { useResumeStore } from '../../lib/store/resumeStore';
 import { useIsMutating } from '@tanstack/react-query';
 import { useGetResume, useSaveResume } from '../../lib/hooks/useResumes';
@@ -63,6 +63,14 @@ function BuilderPageContent() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
+    
+    // Check localstorage for tour completion
+    const tourDone = localStorage.getItem('meridian_tour_completed');
+    if (!tourDone) {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
     
     const handleNativeWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
@@ -119,12 +127,11 @@ function BuilderPageContent() {
     <div className={styles.builderTheme}>
       <TopNav 
         activeTemplate={selectedTemplateId}
-        setActiveTemplate={setSelectedTemplateId}
         documentName={documentName}
         setDocumentName={setDocumentName}
       />
 
-      <div className={styles.saasLayoutWrapper}>
+      <div className={`${styles.saasMainCanvas} tour-main-canvas`} ref={canvasRef as any}>
         <LeftSidebar
           activeSection={activeSection}
           setActiveSection={setActiveSection}
@@ -173,8 +180,13 @@ function BuilderPageContent() {
         <AnalysisPanel />
       </div>
 
-      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
-    </div>
+      <OnboardingTour 
+        run={showOnboarding}
+        onFinish={() => {
+          setShowOnboarding(false);
+          localStorage.setItem('meridian_tour_completed', 'true');
+        }}
+      /></div>
   );
 }
 

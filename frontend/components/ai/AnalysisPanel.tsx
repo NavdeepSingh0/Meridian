@@ -70,7 +70,7 @@ export default function AnalysisPanel() {
   const isError = atsScoreMutation.isError || critiqueMutation.isError;
 
   return (
-    <aside className={builderStyles.saasRightSidebar}>
+    <aside className={`${builderStyles.saasRightSidebar} tour-analysis-panel`}>
       <div className={builderStyles.sideTabBarContainer}>
         <div className={builderStyles.sideTabBar} style={{ maxWidth: '240px' }}>
           <button 
