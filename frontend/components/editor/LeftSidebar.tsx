@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import styles from '../../app/builder/builder.module.css';
 import BasicsForm from './forms/BasicsForm';
-import HeadlineForm from './forms/HeadlineForm';
-import SummaryForm from './forms/SummaryForm';
-import WorkForm from './forms/WorkForm';
 import EducationForm from './forms/EducationForm';
-import SkillsForm from './forms/SkillsForm';
-import ProjectsForm from './forms/ProjectsForm';
 import CertificatesForm from './forms/CertificatesForm';
+import WorkForm from './forms/WorkForm';
+import ProjectsForm from './forms/ProjectsForm';
+import SkillsForm from './forms/SkillsForm';
+import AwardsForm from './forms/AwardsForm';
 
 import { useResumeStore } from '../../lib/store/resumeStore';
 import { mockResumes } from '../../lib/store/mockResumes';
@@ -52,13 +51,12 @@ export default function LeftSidebar({ activeSection, setActiveSection, isLocked 
 
   const [sections, setSections] = useState([
     { id: 'Basics', label: 'Resume Header', icon: 'person', component: BasicsForm },
-    { id: 'Headline', label: 'Headline', icon: 'view_headline', component: HeadlineForm },
-    { id: 'Summary', label: 'Professional Summary', icon: 'description', component: SummaryForm },
     { id: 'Education', label: 'Education', icon: 'school', component: EducationForm },
     { id: 'Certificates', label: 'Certifications', icon: 'workspace_premium', component: CertificatesForm },
     { id: 'Experience', label: 'Professional Experience', icon: 'work', component: WorkForm },
     { id: 'Projects', label: 'Projects & Outside Experience', icon: 'folder_open', component: ProjectsForm },
-    { id: 'Skills', label: 'Skills', icon: 'build', component: SkillsForm },
+    { id: 'Skills', label: 'Skills', icon: 'psychology', component: SkillsForm },
+    { id: 'Awards', label: 'Awards & Honors', icon: 'emoji_events', component: AwardsForm },
   ]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);

@@ -76,6 +76,11 @@ interface ResumeStore {
   updateCertificateEntry: (index: number, field: string, value: string) => void;
   removeCertificateEntry: (index: number) => void;
 
+  // Awards
+  addAwardEntry: () => void;
+  updateAwardEntry: (index: number, field: string, value: string) => void;
+  removeAwardEntry: (index: number) => void;
+
   // Panel & Results
   setJobDescription: (text: string) => void;
   setPanelState: (state: PanelState) => void;
@@ -272,6 +277,27 @@ export const useResumeStore = create<ResumeStore>((set) => ({
     const newCerts = [...state.resumeData.certificates];
     newCerts.splice(index, 1);
     return { resumeData: { ...state.resumeData, certificates: newCerts } };
+  }),
+
+  // Awards Actions
+  addAwardEntry: () => set((state) => ({
+    resumeData: {
+      ...state.resumeData,
+      awards: [
+        ...state.resumeData.awards,
+        { title: '', date: '', awarder: '', summary: '' }
+      ]
+    }
+  })),
+  updateAwardEntry: (index, field, value) => set((state) => {
+    const newAwards = [...state.resumeData.awards];
+    newAwards[index] = { ...newAwards[index], [field]: value };
+    return { resumeData: { ...state.resumeData, awards: newAwards } };
+  }),
+  removeAwardEntry: (index) => set((state) => {
+    const newAwards = [...state.resumeData.awards];
+    newAwards.splice(index, 1);
+    return { resumeData: { ...state.resumeData, awards: newAwards } };
   }),
 
   // Panel & Results
