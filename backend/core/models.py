@@ -34,7 +34,7 @@ class Profile(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="profile"
     )
-    ai_credits = models.IntegerField(default=10)
+    ai_credits = models.IntegerField(default=30)
     is_premium = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
 
