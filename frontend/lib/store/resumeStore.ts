@@ -88,7 +88,7 @@ interface ResumeStore {
   // Phase 2: DB loading
   currentResumeId: number | null;
   setCurrentResumeId: (id: number) => void;
-  loadResumeFromDB: (resumeData: ResumeData, id: number) => void;
+  loadResumeFromDB: (resumeData: ResumeData, id: number | null) => void;
   clearCurrentResume: () => void;
 
   // Hydration
