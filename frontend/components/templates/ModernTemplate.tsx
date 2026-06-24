@@ -175,13 +175,13 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
             {skillsProps.marker && <NumberMarker marker={skillsProps.marker} />}
             <LeftSectionTitle>Skills</LeftSectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9em' }}>
-              {skills.map((sg, idx) => (
+              {skills.map((sg: any, idx: any) => (
                 <div key={idx}>
                   <div style={{ fontSize: '0.78em', fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: '0.4em' }}>
                     {sg.name}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em' }}>
-                    {sg.keywords.map((kw, i) => (
+                    {sg.keywords.map((kw: any, i: any) => (
                       <span key={i} style={{
                         backgroundColor: 'rgba(255,255,255,0.1)',
                         color: 'rgba(255,255,255,0.85)',
@@ -206,7 +206,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
           <div>
             <LeftSectionTitle>Awards</LeftSectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5em' }}>
-              {awards.map((award, idx) => (
+              {awards.map((award: any, idx: any) => (
                 <div key={idx} style={{ fontSize: '0.75em', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
                   {award.title}
                 </div>
@@ -241,7 +241,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
           <div style={{ marginBottom: '1.4em', ...workProps.style }}>
             {workProps.marker && <NumberMarker marker={workProps.marker} />}
             <RightSectionTitle>Experience</RightSectionTitle>
-            {work.map((job, idx) => (
+            {work.map((job: any, idx: any) => (
               <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1.1em' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.12em' }}>
                   <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{job.position}</h3>
@@ -251,11 +251,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
                 </div>
                 <div style={{ fontSize: '0.85em', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '0.4em' }}>{job.name}</div>
                 {job.highlights.length > 0 && (
-                  <ul style={{ margin: 0, paddingLeft: '1.1em', fontSize: '0.86em', color: '#444', lineHeight: 1.6 }}>
-                    {job.highlights.map((h, i) => (
-                      <li key={i} style={{ marginBottom: '0.22em' }}>{h}</li>
-                    ))}
-                  </ul>
+                  <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>{job.highlights.map((h: any, i: any) => <li key={i} style={{ marginBottom: '0.2em' }}>{h}</li>)}</ul>
                 )}
               </div>
             ))}
@@ -267,7 +263,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
           <div style={{ marginBottom: '1.4em', ...projectsProps.style }}>
             {projectsProps.marker && <NumberMarker marker={projectsProps.marker} />}
             <RightSectionTitle>Projects</RightSectionTitle>
-            {projects.map((proj, idx) => (
+            {projects.map((proj: any, idx: any) => (
               <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1.1em' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.12em' }}>
                   <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{proj.name}</h3>
@@ -284,11 +280,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
                   </div>
                 )}
                 {proj.highlights.length > 0 && (
-                  <ul style={{ margin: 0, paddingLeft: '1.1em', fontSize: '0.86em', color: '#444', lineHeight: 1.6 }}>
-                    {proj.highlights.map((h, i) => (
-                      <li key={i} style={{ marginBottom: '0.22em' }}>{h}</li>
-                    ))}
-                  </ul>
+                  <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>{proj.highlights.map((h: any, i: any) => <li key={i} style={{ marginBottom: '0.2em' }}>{h}</li>)}</ul>
                 )}
               </div>
             ))}
@@ -300,7 +292,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
           <div style={{ marginBottom: '1.4em', ...eduProps.style }}>
             {eduProps.marker && <NumberMarker marker={eduProps.marker} />}
             <RightSectionTitle>Education</RightSectionTitle>
-            {education.map((edu, idx) => (
+            {education.map((edu: any, idx: any) => (
               <div key={idx} style={{ marginBottom: idx < education.length - 1 ? '0.8em' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <h3 style={{ fontSize: '0.92em', fontWeight: 700, color: '#111', margin: 0 }}>
@@ -323,7 +315,7 @@ export default function ModernTemplate({ highlightedSections = [], data }: Moder
           <div style={{ marginBottom: '1.4em', ...certProps.style }}>
             {certProps.marker && <NumberMarker marker={certProps.marker} />}
             <RightSectionTitle>Certifications</RightSectionTitle>
-            {certificates.map((cert, idx) => (
+            {certificates.map((cert: any, idx: any) => (
               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: idx < certificates.length - 1 ? '0.5em' : 0 }}>
                 <div>
                   <span style={{ fontSize: '0.9em', fontWeight: 600, color: '#111' }}>{cert.name}</span>

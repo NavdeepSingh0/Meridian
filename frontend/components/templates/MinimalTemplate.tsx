@@ -134,7 +134,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...workProps.style }}>
           {workProps.marker && <NumberMarker marker={workProps.marker} />}
           <SectionTitle>Experience</SectionTitle>
-          {work.map((job, idx) => (
+          {work.map((job: any, idx: any) => (
             <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.15em' }}>
                 <div>
@@ -147,7 +147,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
               </div>
               {job.highlights.length > 0 && (
                 <ul style={{ margin: '0.3em 0 0', paddingLeft: '1.2em', fontSize: '0.85em', color: '#333' }}>
-                  {job.highlights.map((h, i) => (
+                  {job.highlights.map((h: any, i: any) => (
                     <li key={i} style={{ marginBottom: '0.2em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -162,7 +162,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...projectsProps.style }}>
           {projectsProps.marker && <NumberMarker marker={projectsProps.marker} />}
           <SectionTitle>Projects</SectionTitle>
-          {projects.map((proj, idx) => (
+          {projects.map((proj: any, idx: any) => (
             <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.12em' }}>
                 <div>
@@ -182,7 +182,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
               )}
               {proj.highlights.length > 0 && (
                 <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.85em', color: '#333' }}>
-                  {proj.highlights.map((h, i) => (
+                  {proj.highlights.map((h: any, i: any) => (
                     <li key={i} style={{ marginBottom: '0.2em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -197,7 +197,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...eduProps.style }}>
           {eduProps.marker && <NumberMarker marker={eduProps.marker} />}
           <SectionTitle>Education</SectionTitle>
-          {education.map((edu, idx) => (
+          {education.map((edu: any, idx: any) => (
             <div key={idx} style={{
               display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline',
               gap: '0 1em', marginBottom: idx < education.length - 1 ? '0.5em' : 0,
@@ -223,7 +223,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
           {skillsProps.marker && <NumberMarker marker={skillsProps.marker} />}
           <SectionTitle>Skills</SectionTitle>
           <div style={{ fontSize: '0.85em', lineHeight: 1.7, color: '#333' }}>
-            {skills.map((sg, idx) => (
+            {skills.map((sg: any, idx: any) => (
               <React.Fragment key={idx}>
                 <strong style={{ color: '#111' }}>{sg.name}:</strong>{' '}
                 {sg.keywords.join(', ')}
@@ -239,7 +239,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...certProps.style }}>
           {certProps.marker && <NumberMarker marker={certProps.marker} />}
           <SectionTitle>Certifications</SectionTitle>
-          {certificates.map((cert, idx) => (
+          {certificates.map((cert: any, idx: any) => (
             <div key={idx} style={{
               display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline',
               gap: '0 1em', marginBottom: idx < certificates.length - 1 ? '0.4em' : 0,
@@ -258,7 +258,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
       {awards.length > 0 && (
         <div style={{ marginBottom: '1.2em' }}>
           <SectionTitle>Awards &amp; Recognition</SectionTitle>
-          {awards.map((award, idx) => (
+          {awards.map((award: any, idx: any) => (
             <div key={idx} style={{ fontSize: '0.85em', color: '#333', marginBottom: idx < awards.length - 1 ? '0.35em' : 0, lineHeight: 1.55 }}>
               {award.title}
             </div>
