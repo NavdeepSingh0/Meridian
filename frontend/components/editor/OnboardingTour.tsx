@@ -44,7 +44,7 @@ export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
     },
     {
       target: '.tour-main-canvas',
-      placement: 'left',
+      placement: 'center',
       title: 'Live Preview',
       content: 'Your resume updates instantly in the center canvas. You can zoom in and out using Ctrl+Scroll.',
       skipBeacon: true,
