@@ -57,13 +57,18 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
         try:
             # Add clock_skew_seconds to handle local clock drift
             decoded_token = auth.verify_id_token(token, clock_skew_seconds=300)
-        except auth.ExpiredIdTokenError:
-            raise exceptions.AuthenticationFailed('The authentication token has expired.')
+        except auth.ExpiredIdTokenError as e:
+            print(f"[AUTH] ExpiredIdTokenError: {e}")
+            raise exceptions.AuthenticationFailed(f'Token expired: {str(e)}')
+        except auth.RevokedIdTokenError as e:
+            print(f"[AUTH] RevokedIdTokenError: {e}")
+            raise exceptions.AuthenticationFailed(f'Token revoked: {str(e)}')
         except auth.InvalidIdTokenError as e:
-            print(f"InvalidIdTokenError details: {e}")
-            raise exceptions.AuthenticationFailed(f'Invalid authentication token: {str(e)}')
+            print(f"[AUTH] InvalidIdTokenError type={type(e).__name__}: {e}")
+            raise exceptions.AuthenticationFailed(f'Token invalid ({type(e).__name__}): {str(e)}')
         except Exception as e:
-            raise exceptions.AuthenticationFailed(f'Error validating token: {str(e)}')
+            print(f"[AUTH] Unexpected error type={type(e).__name__}: {e}")
+            raise exceptions.AuthenticationFailed(f'Auth error ({type(e).__name__}): {str(e)}')
 
         # Extract the user's UID and email from the Firebase token
         uid = decoded_token.get('uid')
