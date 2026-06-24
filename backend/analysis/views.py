@@ -8,9 +8,33 @@ import jsonschema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from resumes.schema import validate_resume_document
+from resumes.schema import validate_resume_document
 from analysis import services
+from core.models import Profile
+
+def _check_and_deduct_credits(user):
+    """
+    Checks if the user has enough credits or is premium/admin.
+    If so, deducts 1 credit and returns True.
+    If not, raises an Exception to be handled by the view.
+    """
+    if not user or not user.is_authenticated:
+        raise PermissionError("You must be logged in to use AI analysis.")
+        
+    profile, _ = Profile.objects.get_or_create(user=user)
+    
+    if profile.is_admin or profile.is_premium:
+        return True
+        
+    if profile.ai_credits > 0:
+        profile.ai_credits -= 1
+        profile.save(update_fields=["ai_credits"])
+        return True
+        
+    raise ValueError("You have run out of AI credits. Please upgrade your plan.")
 
 
 def _handle_service_errors(exc: Exception) -> Response | None:
@@ -40,6 +64,13 @@ class CritiqueView(APIView):
         resume_data = request.data.get("resume_data")
         if not resume_data:
             return Response({"error": "resume_data is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            _check_and_deduct_credits(request.user)
+        except PermissionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
 
         # Validate structure before sending to AI
         try:
@@ -73,6 +104,13 @@ class ATSScoreView(APIView):
         job_description = request.data.get("job_description", "")
         if not resume_data:
             return Response({"error": "resume_data is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            _check_and_deduct_credits(request.user)
+        except PermissionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
 
         try:
             validate_resume_document(resume_data)
@@ -110,6 +148,13 @@ class ApplySuggestionView(APIView):
         
         if not section_name or section_data is None or not suggestion:
             return Response({"error": "section_name, section_data, and suggestion are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            _check_and_deduct_credits(request.user)
+        except PermissionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
 
         try:
             # Returns a raw JSON string
@@ -162,3 +207,52 @@ class ExportPDFView(APIView):
             import traceback
             traceback.print_exc()
             return Response({"detail": f"An error occurred while generating the PDF: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ParsePDFView(APIView):
+    """
+    POST /api/analysis/parse-pdf/
+    Accepts: multipart/form-data with a 'file' field containing a PDF.
+    Returns: { "resume_data": {...} } parsed from the PDF.
+    """
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request, *args, **kwargs):
+        from analysis.services import parse_resume_pdf_upload, ScannedPDFError
+
+        try:
+            _check_and_deduct_credits(request.user)
+        except PermissionError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+
+        # Validate file present
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file extension
+        name = uploaded_file.name or ""
+        if not name.lower().endswith(".pdf"):
+            return Response({"detail": "Only PDF files are accepted."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file size (max 5MB)
+        max_size = 5 * 1024 * 1024  # 5MB
+        if uploaded_file.size > max_size:
+            return Response({"detail": "File too large (max 5MB)."}, status=status.HTTP_400_BAD_REQUEST)
+
+        pdf_bytes = uploaded_file.read()
+
+        try:
+            resume_data = parse_resume_pdf_upload(pdf_bytes)
+            return Response({"resume_data": resume_data}, status=status.HTTP_200_OK)
+        except ScannedPDFError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"detail": f"An error occurred while parsing the PDF: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

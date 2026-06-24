@@ -4,148 +4,26 @@ import { ATSResult, CritiqueResult } from '../types/analysis';
 
 export const initialResumeData: ResumeData = {
   basics: {
-    name: "Navdeep Singh Dhunna",
-    label: "CS Undergraduate",
-    email: "navdeep.s.dhunna@gmail.com",
-    phone: "+91 78019 83501",
-    url: "github.com/NavdeepSingh0",
-    summary: "2nd-year CS undergraduate with 4 production-deployed systems across fintech, civic tech, and B2B SaaS. Full stack across React/React Native frontends, FastAPI and Node.js backends, PostgreSQL and MongoDB. Top 10 at Zomathon Hackathon (500+ teams). Seeking paid remote software development internship.",
+    name: "",
+    label: "",
+    email: "",
+    phone: "",
+    url: "",
+    summary: "",
     location: {
-      city: "Surat",
-      region: "Gujarat",
-      countryCode: "India",
+      city: "",
+      region: "",
+      countryCode: "",
     },
-    profiles: [
-      { network: "LinkedIn", url: "linkedin.com/in/navdeepsingh-dhunna" },
-      { network: "GitHub", url: "github.com/NavdeepSingh0" }
-    ],
+    profiles: [],
   },
   work: [],
-  education: [
-    {
-      institution: "Chandigarh University, Mohali",
-      area: "Computer Science and Engineering",
-      studyType: "B.E.",
-      startDate: "2024",
-      endDate: "2028",
-      score: "7.79 / 10"
-    },
-    {
-      institution: "GSEB Board, Gujarat",
-      area: "Higher Secondary (12th)",
-      studyType: "",
-      startDate: "2021",
-      endDate: "2024",
-      score: "73.56%"
-    }
-  ],
-  projects: [
-    {
-      name: "Carto — Cart Recommendation Engine",
-      description: "Python · FastAPI · React.js · LightGBM · Item2Vec · Vite",
-      url: "carto-demo.netlify.app",
-      startDate: "",
-      endDate: "Mar 2026",
-      keywords: [],
-      highlights: [
-        "Sole technical contributor on 3-person team; advanced to Top 10 out of 500+ teams at Zomathon, a national hackathon by Zomato.",
-        "Built two-stage recommendation engine — Hexagon Candidate Engine + LightGBM ranker with Item2Vec embeddings — achieving NDCG@5 of 0.89, AUC of 0.77, and 30% lift over baseline at sub-100ms P90 latency.",
-        "Synthesized 14,000-interaction dataset from scratch; published dataset and full codebase on Kaggle."
-      ]
-    },
-    {
-      name: "Vakalat — Legal Intelligence Platform",
-      description: "Node.js · Express · Gemini API · Firebase · React 19 · Puppeteer · Vite",
-      url: "github.com/NavdeepSingh0/vakalat",
-      startDate: "",
-      endDate: "Mar 2026",
-      keywords: [],
-      highlights: [
-        "Consolidated 230M+ eCourts cases into a single CNR lookup, replacing a fragmented multi-page government workflow.",
-        "Designed 18-endpoint RESTful API with 3-step CAPTCHA session relay (10-min TTL) and Gemini AI integration for AI generated hearing prep questions.",
-        "Implemented adjournment cost algorithm (v3.2) tracking ₹550–50,000/day across 6 multiplier stages, benchmarked against India's 61% unproductive hearing rate (DAKSH Study)."
-      ]
-    },
-    {
-      name: "Credwork — Gig Worker Income Verification App",
-      description: "React Native · FastAPI · PostgreSQL · Supabase · scikit-learn · Next.js · ReportLab",
-      url: "credwork.vercel.app",
-      startDate: "",
-      endDate: "Mar 2026",
-      keywords: [],
-      highlights: [
-        "Production-deployed fintech mobile app targeting income verification for India's 400M+ informal workers; separate Next.js marketing site both live on Vercel.",
-        "Built 4-layer fraud detection pipeline: PDF metadata analysis, font consistency checks, Benford's Law, and Isolation Forest anomaly detection on UPI transaction data.",
-        "Developed GigScore algorithm (0–1000) evaluating income consistency over 6-month rolling window; auto-generates QR verified PDF certificates via ReportLab."
-      ]
-    },
-    {
-      name: "Slatework — B2B SaaS Knowledge Management",
-      description: "React 19 · TypeScript · Node.js · Supabase · PostgreSQL · shadcn/ui · Tailwind CSS",
-      url: "slate-work.vercel.app",
-      startDate: "",
-      endDate: "Feb 2026",
-      keywords: [],
-      highlights: [
-        "Shipped production B2B SaaS platform with RBAC across 4 permission levels and Row-Level Security policies on Supabase PostgreSQL.",
-        "Implemented full-text search achieving sub-50ms query performance with Supabase Realtime updates and versioned article approval workflows."
-      ]
-    }
-  ],
-  skills: [
-    {
-      name: "Languages",
-      level: "",
-      keywords: ["Python", "JavaScript (ES6+)", "TypeScript", "C/C++", "SQL"]
-    },
-    {
-      name: "Frontend",
-      level: "",
-      keywords: ["React.js", "React Native", "Next.js", "Vite", "Tailwind CSS", "shadcn/ui"]
-    },
-    {
-      name: "Backend",
-      level: "",
-      keywords: ["FastAPI", "Node.js", "Express.js", "Django", "Flask", "REST APIs"]
-    },
-    {
-      name: "Databases",
-      level: "",
-      keywords: ["PostgreSQL", "MongoDB", "Supabase", "Firebase", "MySQL", "Redis"]
-    },
-    {
-      name: "ML & AI",
-      level: "",
-      keywords: ["LightGBM", "scikit-learn", "Isolation Forest", "Item2Vec", "Gemini API", "Ollama"]
-    },
-    {
-      name: "DevOps & Tools",
-      level: "",
-      keywords: ["Docker", "Git", "GitHub", "Vercel", "Netlify", "Postman", "CI/CD"]
-    }
-  ],
+  education: [],
+  projects: [],
+  skills: [],
   certificates: [],
   volunteer: [],
-  awards: [
-    {
-      title: "Top 10 / 500+ teams, Zomathon Hackathon (Zomato) — published 14,000-row Carto dataset on Kaggle.",
-      date: "",
-      awarder: "",
-      summary: ""
-    },
-    {
-      title: "Finalist, Hackshastra 2.0 (Chandigarh University) — Top teams out of 500+ participants with Credwork.",
-      date: "",
-      awarder: "",
-      summary: ""
-    },
-    {
-      title: "Co-authored IEEE-format paper on explainable deep learning for PCOS detection using CNNs with Grad-CAM and EigenCAM XAI evaluation.",
-      date: "",
-      awarder: "",
-      summary: ""
-    }
-  ],
+  awards: [],
   publications: [],
   languages: [],
   interests: [],
@@ -166,7 +44,7 @@ interface ResumeStore {
   documentMargin: number;
   undoStack: ResumeData[];
   hasDownloadedFreeResume: boolean;
-  user: any;
+  user: unknown;
 
   // Actions
   // Basics
@@ -204,8 +82,13 @@ interface ResumeStore {
   setAtsResult: (result: ATSResult) => void;
   setCritiqueResult: (result: CritiqueResult) => void;
   setHasDownloadedFreeResume: (value: boolean) => void;
-  setUser: (user: any) => void;
+  setUser: (user: unknown) => void;
   resetToEditing: () => void;
+  
+  // Phase 2: DB loading
+  currentResumeId: number | null;
+  loadResumeFromDB: (resumeData: ResumeData, id: number) => void;
+  clearCurrentResume: () => void;
 
   // Hydration
   hydratePersistedState: (persistedState: Partial<ResumeStore>) => void;
@@ -213,8 +96,9 @@ interface ResumeStore {
   setSelectedTemplateId: (id: string) => void;
   setFontSize: (size: number) => void;
   setDocumentMargin: (margin: number) => void;
-  injectImprovement: (section: string, suggestion: string) => void;
+  injectImprovement: (section: string, rewrittenSectionData: unknown) => void;
   undoLastAIEdit: () => void;
+  setResumeData: (data: ResumeData) => void;
 }
 
 export const useResumeStore = create<ResumeStore>((set) => ({
@@ -230,9 +114,14 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   undoStack: [],
   hasDownloadedFreeResume: false,
   user: null,
+  currentResumeId: null,
 
   // Hydration
   hydratePersistedState: (state) => set((prev) => ({ ...prev, ...state })),
+
+  loadResumeFromDB: (resumeData, id) => set({ resumeData, currentResumeId: id }),
+  clearCurrentResume: () => set({ resumeData: initialResumeData, currentResumeId: null }),
+  setResumeData: (data) => set({ resumeData: data }),
 
   setSelectedTemplateId: (id) => set({ selectedTemplateId: id }),
   setFontSize: (size) => set({ fontSize: size }),

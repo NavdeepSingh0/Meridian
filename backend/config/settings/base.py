@@ -11,7 +11,6 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     GEMINI_API_KEY=(str, ""),
     GROQ_API_KEY=(str, ""),
-    SUPABASE_JWT_SECRET=(str, ""),
 )
 
 # Read .env from the api root (one level up from config/)
@@ -87,12 +86,12 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "core.authentication.SupabaseJWTAuthentication",
+        "core.authentication.FirebaseAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [],
 }
 
-SUPABASE_JWT_SECRET = env("SUPABASE_JWT_SECRET")
+
 
 # Gemini API key — read from environment. Empty string = Demo Mode.
 GEMINI_API_KEY: str = env("GEMINI_API_KEY")

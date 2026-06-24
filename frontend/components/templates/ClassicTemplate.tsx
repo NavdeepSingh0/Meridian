@@ -9,6 +9,7 @@ interface HighlightedSection {
 
 interface ClassicTemplateProps {
   highlightedSections?: HighlightedSection[];
+  data?: any;
 }
 
 // ── Module-level sub-components (must not be defined inside render) ──────────
@@ -45,9 +46,10 @@ function NumberMarker({ marker }: { marker: number }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ClassicTemplate({ highlightedSections = [] }: ClassicTemplateProps) {
-  const { resumeData } = useResumeStore();
-  const { basics, work, education, projects, skills, certificates, awards } = resumeData;
+export default function ClassicTemplate({ highlightedSections = [], data }: ClassicTemplateProps) {
+  const storeData = useResumeStore((state) => state.resumeData);
+  const activeData = data || storeData;
+  const { basics, work, education, projects, skills, certificates, awards } = activeData;
 
   const getHighlightProps = (sectionName: string) => {
     const highlight = highlightedSections.find(s => s.section === sectionName);

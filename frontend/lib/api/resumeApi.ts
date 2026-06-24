@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { auth } from '../firebase/client';
 import { ResumeData } from '../types/resume';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
@@ -9,6 +10,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+});
+
+apiClient.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export interface SavedResume {

@@ -17,7 +17,10 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: '[AppName] - Resume Builder & ATS Analyzer',
+  title: {
+    template: '%s — Meridian CV',
+    default: 'Meridian CV — AI-Powered Resume Builder',
+  },
   description: 'Build a polished resume in minutes. Get section-by-section feedback and pinpoint ATS gaps.',
 };
 

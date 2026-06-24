@@ -1,4 +1,5 @@
-import jwt
+import firebase_admin
+from firebase_admin import auth, credentials
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import authentication
@@ -6,10 +7,27 @@ from rest_framework import exceptions
 
 User = get_user_model()
 
-class SupabaseJWTAuthentication(authentication.BaseAuthentication):
+import os
+import json
+
+# Initialize Firebase Admin App
+if not firebase_admin._apps:
+    try:
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+        if cred_json:
+            cert = json.loads(cred_json)
+            cred = credentials.Certificate(cert)
+        else:
+            # Fallback to local JSON file for development
+            cred = credentials.Certificate("firebase-credentials.json")
+        firebase_admin.initialize_app(cred)
+    except Exception as e:
+        print(f"Warning: Failed to initialize Firebase Admin SDK. {e}")
+
+class FirebaseAuthentication(authentication.BaseAuthentication):
     """
     Custom authentication class for Django Rest Framework that verifies
-    JWTs issued by Supabase Auth.
+    JWTs issued by Firebase Auth.
     """
     keyword = 'Bearer'
 
@@ -26,31 +44,26 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
         token = auth_parts[1]
 
         try:
-            # Supabase issues tokens using HS256 algorithm with the project's JWT secret
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                options={"verify_aud": False}
-            )
-        except jwt.ExpiredSignatureError:
+            decoded_token = auth.verify_id_token(token)
+        except auth.ExpiredIdTokenError:
             raise exceptions.AuthenticationFailed('The authentication token has expired.')
-        except jwt.InvalidTokenError:
+        except auth.InvalidIdTokenError:
             raise exceptions.AuthenticationFailed('Invalid authentication token.')
+        except Exception as e:
+            raise exceptions.AuthenticationFailed(f'Error validating token: {str(e)}')
 
-        # Extract the user's UUID and email from the Supabase JWT
-        user_id = payload.get('sub')
-        email = payload.get('email')
+        # Extract the user's UID and email from the Firebase token
+        uid = decoded_token.get('uid')
+        email = decoded_token.get('email', '')
 
-        if not user_id:
+        if not uid:
             raise exceptions.AuthenticationFailed('Token contains no user identifier.')
 
-        # Get or create the Django User based on the Supabase UUID (which we map to the username)
-        # We also store the email if it's available
+        # Get or create the Django User based on the Firebase UID (which we map to the username)
         user, created = User.objects.get_or_create(
-            username=user_id,
+            username=uid,
             defaults={
-                'email': email or '',
+                'email': email,
             }
         )
 

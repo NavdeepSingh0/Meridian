@@ -96,6 +96,9 @@ def _call_gemini_and_parse(
                     continue
                 logger.error(f"Groq API {code} error after {max_retries} attempts.")
                 raise TimeoutOrUnavailableError()
+            elif code in [401, 403]:
+                logger.error(f"Groq API Access Denied ({code}): {getattr(e, 'message', str(e))}")
+                raise SafetyError("Groq API access denied. Please verify your GROQ_API_KEY in the backend .env file or check your network/VPN settings.")
             elif code == 400:
                 logger.error(f"Groq API Bad Request (400): {getattr(e, 'message', str(e))}")
                 raise BadRequestError()
@@ -269,3 +272,116 @@ def render_resume_pdf(resume_data: dict, template_id: str, settings: dict = None
                 raise Exception(f"xhtml2pdf error: {pdf.err}")
         except ImportError:
             raise NotImplementedError("WeasyPrint or its system dependencies (GTK3) are not installed, and xhtml2pdf fallback is not installed.")
+
+
+class ScannedPDFError(Exception):
+    """Raised when PDF text extraction yields insufficient text (likely scanned image)."""
+    pass
+
+
+def parse_resume_pdf_upload(pdf_bytes: bytes) -> dict:
+    """
+    Extract text from a PDF and use the LLM to parse it into the JSON Resume schema.
+    """
+    from resumes.schema import RESUME_SCHEMA, get_empty_resume_document
+
+    # 1. Extract text
+    full_text = ""
+    try:
+        import pdfplumber
+        import io as _io
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    full_text += text + "\n"
+    except Exception as e:
+        logger.error(f"pdfplumber failed to extract text: {e}")
+
+    # 2. Scanned PDF guard
+    if len(full_text.strip()) < 100:
+        raise ScannedPDFError(
+            "This PDF appears to be a scanned image. Please upload a text-based PDF."
+        )
+
+    # 3. Demo mode
+    if is_demo_mode():
+        from analysis.mock_data import get_mock_parsed_resume
+        logger.info("Demo mode: returning mock parsed resume.")
+        return get_mock_parsed_resume()
+
+    # 4. Build prompt
+    schema_str = json.dumps(RESUME_SCHEMA, indent=2)
+    system_prompt = (
+        "You are a resume parser. Given raw text from a PDF resume, extract and map it to this JSON schema exactly.\n\n"
+        f"JSON SCHEMA:\n{schema_str}\n\n"
+        "RULES:\n"
+        "- Output ONLY a valid JSON object. No markdown fences, no explanations.\n"
+        "- Leave fields as empty strings or empty arrays if information is not present.\n"
+        "- Normalize dates to MM/YYYY format.\n"
+        "- basics.label = professional title/headline.\n"
+        "- basics.summary = profile paragraph if present.\n"
+        "- work[].position = job title, work[].name = company name.\n"
+        "- highlights[] = bullet points per entry.\n"
+        "- Do NOT fabricate anything not in the text.\n"
+        "- Return raw JSON only."
+    )
+    user_message = f"Parse this resume text into the JSON schema:\n\n{full_text[:8000]}"
+
+    # 5. Call LLM
+    max_retries = 3
+    base_delay = 2
+    response = None
+
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.1,
+                response_format={"type": "json_object"},
+            )
+            break
+        except APIError as e:
+            code = getattr(e, "status_code", getattr(e, "code", None))
+            if code in [429, 503, 504] and attempt < max_retries - 1:
+                time.sleep(base_delay * (2 ** attempt))
+                continue
+            logger.error(f"Groq API error during PDF parse: {code} -- {str(e)}")
+            return _fallback_parsed_resume(full_text)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(base_delay * (2 ** attempt))
+                continue
+            logger.error(f"Unexpected error during PDF parse: {str(e)}")
+            return _fallback_parsed_resume(full_text)
+
+    if response is None:
+        return _fallback_parsed_resume(full_text)
+
+    # 6. Parse and normalise
+    try:
+        raw_text = response.choices[0].message.content or ""
+        cleaned = _clean_json_string(raw_text)
+        parsed = json.loads(cleaned)
+        empty = get_empty_resume_document()
+        for key in empty:
+            if key not in parsed:
+                parsed[key] = empty[key]
+        return parsed
+    except Exception as e:
+        logger.error(f"Failed to parse LLM output during PDF parse: {e}")
+        return _fallback_parsed_resume(full_text)
+
+
+def _fallback_parsed_resume(extracted_text: str) -> dict:
+    """Return an empty resume shell with best-effort name extraction."""
+    from resumes.schema import get_empty_resume_document
+    empty = get_empty_resume_document()
+    lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
+    if lines:
+        empty["basics"]["name"] = lines[0]
+    return empty

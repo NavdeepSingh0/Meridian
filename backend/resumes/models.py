@@ -10,9 +10,12 @@ Design decisions (from §12.2, §7.1):
 Template IDs: "classic", "modern", "minimal" (matching Stitch design spec).
 """
 from django.db import models
+from django.contrib.auth import get_user_model
 
 from core.models import TimeStampedModel
 from resumes.schema import get_empty_resume_document
+
+User = get_user_model()
 
 
 class Resume(TimeStampedModel):
@@ -25,6 +28,14 @@ class Resume(TimeStampedModel):
     The primary persistence path is localStorage (§12.1).
     """
 
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="resumes",
+        help_text="The authenticated user who owns this resume. Null for guest sessions.",
+    )
     title = models.CharField(
         max_length=255,
         default="My Resume",

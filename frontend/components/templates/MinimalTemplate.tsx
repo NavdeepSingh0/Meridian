@@ -9,6 +9,7 @@ interface HighlightedSection {
 
 interface MinimalTemplateProps {
   highlightedSections?: HighlightedSection[];
+  data?: any;
 }
 
 // ── Module-level sub-components ───────────────────────────────────────────────
@@ -45,9 +46,10 @@ function NumberMarker({ marker }: { marker: number }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function MinimalTemplate({ highlightedSections = [] }: MinimalTemplateProps) {
-  const { resumeData } = useResumeStore();
-  const { basics, work, education, projects, skills, certificates, awards } = resumeData;
+export default function MinimalTemplate({ highlightedSections = [], data }: MinimalTemplateProps) {
+  const storeData = useResumeStore((state) => state.resumeData);
+  const activeData = data || storeData;
+  const { basics, work, education, projects, skills, certificates, awards } = activeData;
 
   const getHighlightProps = (sectionName: string) => {
     const highlight = highlightedSections.find(s => s.section === sectionName);

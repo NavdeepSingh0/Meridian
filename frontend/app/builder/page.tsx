@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from './builder.module.css';
 import ClassicTemplate from '../../components/templates/ClassicTemplate';
 import ModernTemplate from '../../components/templates/ModernTemplate';
@@ -9,21 +10,53 @@ import AnalysisPanel from '../../components/ai/AnalysisPanel';
 import TopNav from '../../components/editor/TopNav';
 import { useResumeStore } from '../../lib/store/resumeStore';
 import { useIsMutating } from '@tanstack/react-query';
+import { useGetResume, useSaveResume } from '../../lib/hooks/useResumes';
 
 interface HighlightedSection {
   section: string;
   marker: number;
 }
 
-export default function BuilderPage() {
+function BuilderPageContent() {
   const [activeSection, setActiveSection] = useState<string>('Basics');
   const [documentName, setDocumentName] = useState('');
   const [zoom, setZoom] = useState(100);
   const [isClient, setIsClient] = useState(false);
   const canvasRef = React.useRef<HTMLElement>(null);
   
-  const { panelState, atsResult, critiqueResult, selectedTemplateId, setSelectedTemplateId, fontSize, documentMargin } = useResumeStore();
+  const { panelState, atsResult, critiqueResult, selectedTemplateId, setSelectedTemplateId, fontSize, documentMargin, resumeData, currentResumeId, loadResumeFromDB } = useResumeStore();
   const isMutating = useIsMutating();
+  const searchParams = useSearchParams();
+  const idParam = searchParams.get('id');
+  const dbId = idParam ? parseInt(idParam) : null;
+  
+  const { data: dbResume } = useGetResume(dbId);
+  const saveResumeMutation = useSaveResume();
+
+  useEffect(() => {
+    if (dbResume && dbResume.id !== currentResumeId) {
+      loadResumeFromDB(dbResume.document_data, dbResume.id);
+      setTimeout(() => {
+        setDocumentName(dbResume.title);
+        setSelectedTemplateId(dbResume.template_id);
+      }, 0);
+    }
+  }, [dbResume, currentResumeId, loadResumeFromDB, setSelectedTemplateId]);
+
+  useEffect(() => {
+    if (currentResumeId && isClient) {
+      const timer = setTimeout(() => {
+        saveResumeMutation.mutate({
+          id: currentResumeId,
+          title: documentName || 'My Resume',
+          template_id: selectedTemplateId,
+          document_data: resumeData
+        });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [resumeData, documentName, selectedTemplateId, currentResumeId, isClient, saveResumeMutation]);
+
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -138,5 +171,13 @@ export default function BuilderPage() {
         <AnalysisPanel />
       </div>
     </div>
+  );
+}
+
+export default function BuilderPage() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Loading Builder...</div>}>
+      <BuilderPageContent />
+    </Suspense>
   );
 }

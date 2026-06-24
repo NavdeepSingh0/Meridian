@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { createClient } from '../../lib/supabase/client';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../lib/firebase/client';
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
   const [email, setEmail] = useState('');
@@ -7,8 +8,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: { isOpen: bool
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
-
+  
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,23 +18,24 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: { isOpen: bool
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        // Auto sign-in or check email depending on supabase settings
+        await createUserWithEmailAndPassword(auth, email, password);
+        // After signup, onAuthStateChanged will handle fetching profile
         onSuccess();
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+        await signInWithEmailAndPassword(auth, email, password);
         onSuccess();
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+    } catch (err: unknown) {
+      const errorWithCode = err as { code?: string, message?: string };
+      console.error("Firebase auth error:", err);
+      let errorMessage = 'An error occurred during authentication.';
+      if (errorWithCode.code === 'auth/email-already-in-use') errorMessage = 'Email already in use.';
+      else if (errorWithCode.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password.';
+      else if (errorWithCode.code === 'auth/weak-password') errorMessage = 'Password is too weak.';
+      else if (errorWithCode.code) errorMessage = `Auth error: ${errorWithCode.code}`;
+      else if (errorWithCode.message) errorMessage = errorWithCode.message;
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: { isOpen: bool
         </div>
 
         <p style={{ fontSize: '14px', color: '#555', marginBottom: '24px', lineHeight: 1.5 }}>
-          You've used your free resume download! Please {isSignUp ? 'sign up' : 'log in'} to continue exporting and saving your resumes.
+          You&apos;ve used your free resume download! Please {isSignUp ? 'sign up' : 'log in'} to continue exporting and saving your resumes.
         </p>
 
         {error && (

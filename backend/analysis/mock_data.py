@@ -83,3 +83,63 @@ def get_mock_ats_result(has_job_description: bool = False) -> ATSResult:
         has_job_description=has_job_description,
         missing_keywords=missing
     )
+
+def get_mock_parsed_resume() -> dict:
+    """
+    Return a realistic mock parsed resume dict for demo mode PDF parsing.
+    Matches the locked JSON Resume schema.
+    """
+    return {
+        "basics": {
+            "name": "Sarah Chen",
+            "label": "Full-Stack Software Engineer",
+            "email": "sarah.chen@example.com",
+            "phone": "+1 (415) 555-0198",
+            "url": "sarahchen.dev",
+            "summary": (
+                "Full-stack software engineer with 4 years of experience building "
+                "high-traffic consumer products. Specializes in React/Next.js frontends "
+                "and Python/Django backends."
+            ),
+            "location": {"city": "San Francisco", "region": "CA", "countryCode": "US"},
+            "profiles": [
+                {"network": "LinkedIn", "url": "linkedin.com/in/sarahchen"},
+                {"network": "GitHub", "url": "github.com/sarahchen"},
+            ],
+        },
+        "work": [
+            {
+                "name": "Acme Corp",
+                "position": "Senior Software Engineer",
+                "startDate": "03/2022",
+                "endDate": "Present",
+                "summary": "",
+                "highlights": [
+                    "Led re-architecture of checkout flow, reducing cart abandonment by 22%.",
+                    "Built a real-time notifications system serving 500K+ daily active users.",
+                ],
+            }
+        ],
+        "education": [
+            {
+                "institution": "University of California, Berkeley",
+                "area": "Computer Science",
+                "studyType": "B.S.",
+                "startDate": "08/2016",
+                "endDate": "05/2020",
+                "score": "3.7 GPA",
+            }
+        ],
+        "projects": [],
+        "skills": [
+            {"name": "Languages", "level": "", "keywords": ["TypeScript", "Python", "SQL"]},
+            {"name": "Frameworks", "level": "", "keywords": ["React", "Next.js", "Django"]},
+        ],
+        "certificates": [],
+        "volunteer": [],
+        "awards": [],
+        "publications": [],
+        "languages": [],
+        "interests": [],
+        "references": [],
+    }

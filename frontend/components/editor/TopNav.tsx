@@ -5,7 +5,9 @@ import { useExportPdf } from '../../lib/hooks/useAnalysis';
 import { useSaveResume } from '../../lib/hooks/useResumes';
 import styles from '../../app/builder/builder.module.css';
 import AuthModal from '../auth/AuthModal';
-import { createClient } from '../../lib/supabase/client';
+import { useUserStore } from '../../lib/store/userStore';
+import { auth } from '../../lib/firebase/client';
+import { signOut } from 'firebase/auth';
 
 interface TopNavProps {
   activeTemplate: string;
@@ -16,15 +18,28 @@ interface TopNavProps {
 
 export default function TopNav({ activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const { resumeData, fontSize, documentMargin } = useResumeStore();
+  const { resumeData, fontSize, documentMargin, currentResumeId } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const supabase = createClient();
+  const { firebaseUser, profile } = useUserStore();
   const exportPdfMutation = useExportPdf();
   const saveResumeMutation = useSaveResume();
+  const [toastMsg, setToastMsg] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMsg({ message, type });
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    setShowUserMenu(false);
+    showToast("Signed out successfully");
+  };
 
   const handleExportClick = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = firebaseUser;
     const { hasDownloadedFreeResume, setHasDownloadedFreeResume } = useResumeStore.getState();
 
     // If they aren't logged in and have already used their free download, block them.
@@ -55,13 +70,13 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
       },
       onError: (err) => {
         console.error("Export failed", err);
-        alert("Failed to export PDF. Please try again.");
+        showToast("Failed to export PDF. Please try again.", "error");
       }
     });
   };
 
   const handleSaveToCloud = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = firebaseUser;
     
     // Cloud save strictly requires login
     if (!session) {
@@ -74,11 +89,11 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
       document_data: resumeData
     }, {
       onSuccess: () => {
-        alert("Successfully saved to cloud database!");
+        showToast("Successfully saved to cloud database!");
       },
       onError: (err) => {
         console.error("Save failed", err);
-        alert("Failed to save to cloud database.");
+        showToast("Failed to save to cloud database.", "error");
       }
     });
   };
@@ -125,7 +140,7 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
         
         <div className={styles.builderBreadcrumb}>
           <span className={`material-symbols-outlined ${styles.breadcrumbIcon}`}>description</span>
-          <span className={styles.breadcrumbText}>Documents</span>
+          <Link href="/documents" className={styles.breadcrumbText} style={{ textDecoration: 'none' }}>Documents</Link>
           <span className={`material-symbols-outlined ${styles.breadcrumbIcon}`} style={{ fontSize: '16px' }}>chevron_right</span>
           
           <div className={styles.documentNameContainer}>
@@ -158,10 +173,16 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
           ) : (
             <>
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>task_alt</span>
-              Saved to browser
+              {currentResumeId ? 'Saved to cloud' : 'Saved to browser'}
             </>
           )}
         </div>
+        {firebaseUser && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(0, 106, 98, 0.05)', border: '1px solid rgba(0, 106, 98, 0.2)', borderRadius: '20px', color: 'var(--color-primary)', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>bolt</span>
+            {profile?.ai_credits ?? 0} Credits
+          </div>
+        )}
         
         <div style={{ position: 'relative' }}>
           <button className="btn-secondary-nav" style={{ padding: '6px 14px' }} onClick={() => setShowShareMenu(!showShareMenu)}>
@@ -234,6 +255,52 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
             </>
           )}
         </button>
+
+        {firebaseUser ? (
+          <div style={{ position: 'relative', marginLeft: '8px' }}>
+            <button 
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              style={{ 
+                width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', 
+                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer'
+              }}
+            >
+              {firebaseUser.email?.charAt(0).toUpperCase() || 'U'}
+            </button>
+            
+            {showUserMenu && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: '8px', 
+                background: 'var(--color-base)', border: '1px solid var(--color-border)', 
+                borderRadius: '8px', padding: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                display: 'flex', flexDirection: 'column', gap: '4px', zIndex: 100,
+                width: '180px'
+              }}>
+                <div style={{ padding: '8px', fontSize: '13px', color: 'var(--color-ink-muted)', wordBreak: 'break-all' }}>
+                  {firebaseUser.email}
+                </div>
+                <div style={{ height: '1px', backgroundColor: 'var(--color-border)', margin: '4px 0' }}></div>
+                <button 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', width: '100%', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 600, color: '#EA4335' }}
+                  onClick={handleSignOut}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(234, 67, 53, 0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>logout</span>
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="btn-secondary-nav" style={{ padding: '6px 14px', marginLeft: '8px' }}
+          >
+            Sign in
+          </button>
+        )}
       </div>
 
       <AuthModal 
@@ -241,9 +308,25 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
         onClose={() => setShowAuthModal(false)} 
         onSuccess={() => {
           setShowAuthModal(false);
-          alert("Successfully authenticated! You can now resume your action.");
+          showToast("Successfully authenticated!");
         }}
       />
+      
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+          background: toastMsg.type === 'success' ? '#2e7d32' : '#d32f2f',
+          color: 'white', padding: '12px 24px', borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '14px', fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: '8px',
+          animation: 'fade-in-up 0.3s ease-out'
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            {toastMsg.type === 'success' ? 'check_circle' : 'error'}
+          </span>
+          {toastMsg.message}
+        </div>
+      )}
     </header>
   );
 }

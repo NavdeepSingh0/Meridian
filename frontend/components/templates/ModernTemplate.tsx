@@ -9,6 +9,7 @@ interface HighlightedSection {
 
 interface ModernTemplateProps {
   highlightedSections?: HighlightedSection[];
+  data?: any;
 }
 
 // ── Module-level sub-components ───────────────────────────────────────────────
@@ -63,9 +64,10 @@ function NumberMarker({ marker }: { marker: number }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ModernTemplate({ highlightedSections = [] }: ModernTemplateProps) {
-  const { resumeData } = useResumeStore();
-  const { basics, work, education, projects, skills, certificates, awards } = resumeData;
+export default function ModernTemplate({ highlightedSections = [], data }: ModernTemplateProps) {
+  const storeData = useResumeStore((state) => state.resumeData);
+  const activeData = data || storeData;
+  const { basics, work, education, projects, skills, certificates, awards } = activeData;
 
   const getHighlightProps = (sectionName: string) => {
     const highlight = highlightedSections.find(s => s.section === sectionName);
