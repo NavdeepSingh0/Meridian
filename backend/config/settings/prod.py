@@ -1,7 +1,7 @@
 from .base import *  # noqa: F401, F403
 
 # Placeholder — production settings to be completed before deployment.
-DEBUG = False
+DEBUG = True
 
 # Static files handling in production
 STATIC_ROOT = BASE_DIR / "staticfiles"
