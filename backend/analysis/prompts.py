@@ -342,10 +342,10 @@ FAILS. Penalties are cumulative. Start at 100 and subtract.
     Checks 2 and 9 must NOT fire for an empty work[] — all work-experience
     deductions are consolidated here.
     Evaluation:
-      • work[] is completely empty → HARD FAIL (−18 points).
+      • work[] is completely empty → HARD FAIL (−15 points).
       • work[] has only 1 entry with fewer than 2 highlights → partial fail (−9 points)
       • work[] has 1+ entries with strong highlights → pass (no deduction)
-    FAIL PENALTY: −18 for empty work[], −9 for thin single entry
+    FAIL PENALTY: −15 for empty work[], −9 for thin single entry
 
   [NEW] Check 11 — Professional Positioning & Headline
     Is basics.label a specific, job-targeting professional title?
