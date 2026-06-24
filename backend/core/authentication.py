@@ -12,17 +12,28 @@ import json
 
 # Initialize Firebase Admin App
 if not firebase_admin._apps:
-    try:
-        cred_json = os.environ.get("FIREBASE_CREDENTIALS")
-        if cred_json:
+    cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+    if cred_json:
+        try:
             cert = json.loads(cred_json)
             cred = credentials.Certificate(cert)
-        else:
-            # Fallback to local JSON file for development
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized from FIREBASE_CREDENTIALS env var.")
+        except Exception as e:
+            # Raise so the deployment fails loudly instead of silently serving broken auth
+            raise RuntimeError(f"Failed to initialize Firebase Admin SDK from FIREBASE_CREDENTIALS: {e}") from e
+    else:
+        # Fallback to local JSON file for development
+        try:
             cred = credentials.Certificate("firebase-credentials.json")
-        firebase_admin.initialize_app(cred)
-    except Exception as e:
-        print(f"Warning: Failed to initialize Firebase Admin SDK. {e}")
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized from firebase-credentials.json file.")
+        except Exception as e:
+            raise RuntimeError(
+                "Firebase Admin SDK could not be initialized. "
+                "Set the FIREBASE_CREDENTIALS environment variable in production, "
+                f"or ensure firebase-credentials.json exists locally. Error: {e}"
+            ) from e
 
 class FirebaseAuthentication(authentication.BaseAuthentication):
     """
