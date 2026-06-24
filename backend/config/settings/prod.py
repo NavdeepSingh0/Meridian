@@ -9,8 +9,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Add Whitenoise to middleware right after SecurityMiddleware to serve static files
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+# If no CORS_ALLOWED_ORIGINS is set, fall back to allow all (safe for our use case where frontend auth is Firebase)
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:3000"])
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost"])
