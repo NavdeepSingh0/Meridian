@@ -14,7 +14,9 @@ env = environ.Env(
 )
 
 # Read .env from the api root (one level up from config/)
-environ.Env.read_env(BASE_DIR / ".env")
+# overwrite=False means env vars already set in the environment (e.g. by Render)
+# take priority over values in the .env file.
+environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 
