@@ -36,7 +36,7 @@ All core milestones and **every single bonus objective** have been fully complet
   - Analyzes the user's resume against a pasted Job Description, identifying missing/present keywords, calculating an overall match score, and providing actionable recommendations to bridge the keyword gap.
 - **M5 — Export / Save** ✅ *(30 / 30 pts — Incl. Bonus)*
   - **Export:** Production-ready backend PDF generation pipeline using Python's `xhtml2pdf` engine, rendering the exact visual template chosen by the user.
-  - **Save / Auth:** Complete user authentication and persistence layer using **Supabase** (managed PostgreSQL & Auth). Unauthenticated users get **1 free trial download** before being seamlessly prompted to log in to save their state to the cloud.
+  - **Save / Auth:** Complete user authentication and persistence layer using **Firebase Auth** and a managed PostgreSQL database. All cloud saving and PDF exports require users to log in.
 
 ---
 
@@ -55,7 +55,7 @@ All core milestones and **every single bonus objective** have been fully complet
 - **Deployment:** Vercel
 - **Language:** TypeScript
 - **State Management:** Zustand (Client state), TanStack React Query (Server state)
-- **Authentication:** Supabase Auth (`@supabase/ssr`)
+- **Authentication:** Firebase Auth
 - **Styling:** Tailwind CSS & raw CSS Modules
 
 ### Backend

@@ -87,6 +87,7 @@ interface ResumeStore {
   
   // Phase 2: DB loading
   currentResumeId: number | null;
+  setCurrentResumeId: (id: number) => void;
   loadResumeFromDB: (resumeData: ResumeData, id: number) => void;
   clearCurrentResume: () => void;
 
@@ -115,6 +116,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   hasDownloadedFreeResume: false,
   user: null,
   currentResumeId: null,
+  setCurrentResumeId: (id) => set({ currentResumeId: id }),
 
   // Hydration
   hydratePersistedState: (state) => set((prev) => ({ ...prev, ...state })),

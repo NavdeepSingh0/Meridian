@@ -18,7 +18,7 @@ interface TopNavProps {
 
 export default function TopNav({ activeTemplate, setActiveTemplate, documentName, setDocumentName }: TopNavProps) {
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const { resumeData, fontSize, documentMargin, currentResumeId } = useResumeStore();
+  const { resumeData, fontSize, documentMargin, currentResumeId, setCurrentResumeId } = useResumeStore();
   const [saveState, setSaveState] = useState<'saved' | 'saving'>('saved');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { firebaseUser, profile } = useUserStore();
@@ -40,10 +40,9 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
 
   const handleExportClick = async () => {
     const session = firebaseUser;
-    const { hasDownloadedFreeResume, setHasDownloadedFreeResume } = useResumeStore.getState();
 
-    // If they aren't logged in and have already used their free download, block them.
-    if (!session && hasDownloadedFreeResume) {
+    // Enforce auth for PDF export
+    if (!session) {
       setShowAuthModal(true);
       return;
     }
@@ -63,10 +62,7 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        // Mark that they used their free resume
-        if (!session && !hasDownloadedFreeResume) {
-          setHasDownloadedFreeResume(true);
-        }
+        // Auth is now strictly required for export, so no need for free resume tracking
       },
       onError: (err) => {
         console.error("Export failed", err);
@@ -84,11 +80,15 @@ export default function TopNav({ activeTemplate, setActiveTemplate, documentName
       return;
     }
     saveResumeMutation.mutate({
+      id: currentResumeId || undefined,
       title: documentName || 'My Resume',
       template_id: activeTemplate,
       document_data: resumeData
     }, {
-      onSuccess: () => {
+      onSuccess: (data: any) => {
+        if (data && data.id) {
+          setCurrentResumeId(data.id);
+        }
         showToast("Successfully saved to cloud database!");
       },
       onError: (err) => {

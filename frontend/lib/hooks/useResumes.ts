@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resumeApi } from '../api/resumeApi';
 import { ResumeData } from '../types/resume';
+import { useUserStore } from '../store/userStore';
 
 export const useResumes = () => {
+  const firebaseUser = useUserStore((state) => state.firebaseUser);
   return useQuery({
     queryKey: ['resumes'],
     queryFn: resumeApi.list,
+    enabled: !!firebaseUser,
   });
 };
 

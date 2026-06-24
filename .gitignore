@@ -70,3 +70,6 @@ frontend/app/kimi/v1/app/info.md
 frontend/app/kimi/v2/app/README.md
 frontend/app/kimi/v2/app/info.md
 *.html
+!backend/analysis/templates/analysis/pdf/classic.html
+!backend/analysis/templates/analysis/pdf/modern.html
+!backend/analysis/templates/analysis/pdf/minimal.html

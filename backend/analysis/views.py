@@ -11,9 +11,9 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from resumes.schema import validate_resume_document
-from resumes.schema import validate_resume_document
 from analysis import services
 from core.models import Profile
+from django.db import transaction
 
 def _check_and_deduct_credits(user):
     """
@@ -29,11 +29,13 @@ def _check_and_deduct_credits(user):
     if profile.is_admin or profile.is_premium:
         return True
         
-    if profile.ai_credits > 0:
-        profile.ai_credits -= 1
-        profile.save(update_fields=["ai_credits"])
-        return True
-        
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(id=profile.id)
+        if profile.ai_credits > 0:
+            profile.ai_credits -= 1
+            profile.save(update_fields=["ai_credits"])
+            return True
+            
     raise ValueError("You have run out of AI credits. Please upgrade your plan.")
 
 
@@ -150,16 +152,14 @@ class ApplySuggestionView(APIView):
             return Response({"error": "section_name, section_data, and suggestion are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Returns a raw JSON string
+            rewritten_json_str = services.apply_suggestion(section_name, section_data, suggestion)
             _check_and_deduct_credits(request.user)
+            return Response({"rewritten_section_json": rewritten_json_str}, status=status.HTTP_200_OK)
         except PermissionError as e:
             return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        try:
-            # Returns a raw JSON string
-            rewritten_json_str = services.apply_suggestion(section_name, section_data, suggestion)
-            return Response({"rewritten_section_json": rewritten_json_str}, status=status.HTTP_200_OK)
         except Exception as exc:
             err_response = _handle_service_errors(exc)
             if err_response:
@@ -167,11 +167,14 @@ class ApplySuggestionView(APIView):
             raise
 
 
+from rest_framework.permissions import IsAuthenticated
+
 class ExportPDFView(APIView):
     """
     POST /api/analysis/export-pdf/
     Body: { "resume_data": {...}, "template_id": "classic|modern|minimal" }
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         resume_data = request.data.get("resume_data")
@@ -221,32 +224,13 @@ class ParsePDFView(APIView):
         from analysis.services import parse_resume_pdf_upload, ScannedPDFError
 
         try:
+            resume_data = parse_resume_pdf_upload(pdf_bytes)
             _check_and_deduct_credits(request.user)
+            return Response({"resume_data": resume_data}, status=status.HTTP_200_OK)
         except PermissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        # Validate file present
-        uploaded_file = request.FILES.get("file")
-        if not uploaded_file:
-            return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate file extension
-        name = uploaded_file.name or ""
-        if not name.lower().endswith(".pdf"):
-            return Response({"detail": "Only PDF files are accepted."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate file size (max 5MB)
-        max_size = 5 * 1024 * 1024  # 5MB
-        if uploaded_file.size > max_size:
-            return Response({"detail": "File too large (max 5MB)."}, status=status.HTTP_400_BAD_REQUEST)
-
-        pdf_bytes = uploaded_file.read()
-
-        try:
-            resume_data = parse_resume_pdf_upload(pdf_bytes)
-            return Response({"resume_data": resume_data}, status=status.HTTP_200_OK)
         except ScannedPDFError as e:
             return Response({"detail": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
