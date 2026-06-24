@@ -228,11 +228,10 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
           <SectionTitle>Skills</SectionTitle>
           <div style={{ fontSize: '0.85em', lineHeight: 1.7, color: '#333' }}>
             {skills.map((sg: any, idx: any) => (
-              <React.Fragment key={idx}>
+              <div key={idx} style={{ marginBottom: idx < skills.length - 1 ? '0.3em' : 0 }}>
                 <strong style={{ color: '#111' }}>{sg.name}:</strong>{' '}
                 {sg.keywords.join(', ')}
-                {idx < skills.length - 1 && '   '}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </div>

@@ -1055,37 +1055,32 @@
 }
 
 .accordionContent {
-  padding: 0 12px 16px 12px;
+  padding: 8px 16px 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-/* Input Styles */
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .inputLabel {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-ink-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .inputField {
-  background-color: var(--color-base);
-  /* #FCFFFD */
+  background-color: #ffffff;
   border: 1px solid var(--color-border);
-  /* #D4E8E4 */
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 14px;
   color: var(--color-ink);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   font-family: inherit;
   width: 100%;
 }
@@ -1093,41 +1088,41 @@
 .inputField:focus {
   outline: none;
   border-color: var(--color-primary);
-  /* #64B6AC */
-  box-shadow: 0 0 0 1px var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(100, 182, 172, 0.15);
 }
 
 .textareaField {
-  background-color: var(--color-base);
+  background-color: #ffffff;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 14px;
   color: var(--color-ink);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   font-family: inherit;
   width: 100%;
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .textareaField:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(100, 182, 172, 0.15);
 }
 
 /* Repeatable Entry Styles */
 .repeatableEntry {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 12px;
-  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 20px 16px;
+  background-color: rgba(255, 255, 255, 0.7);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .removeEntryBtn {
