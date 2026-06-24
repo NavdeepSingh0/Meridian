@@ -56,7 +56,7 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
 
         try:
             # Add clock_skew_seconds to handle local clock drift
-            decoded_token = auth.verify_id_token(token, clock_skew_seconds=300)
+            decoded_token = auth.verify_id_token(token, clock_skew_seconds=10)
         except auth.ExpiredIdTokenError as e:
             print(f"[AUTH] ExpiredIdTokenError: {e}")
             raise exceptions.AuthenticationFailed(f'Token expired: {str(e)}')
