@@ -91,13 +91,6 @@ export default function HeroSection() {
             >
               Start Your Journey →
             </Link>
-            <Link
-              href="/checker"
-              className="type-btn"
-              style={{ background: 'transparent', color: '#FCFFFD', border: '1.5px solid rgba(252,255,253,0.35)', padding: '14px 28px', borderRadius: 'var(--radius-pill)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', transition: 'border-color 150ms ease' }}
-            >
-              Check Your Flight Path
-            </Link>
           </motion.div>
 
           {/* Trust Line */}

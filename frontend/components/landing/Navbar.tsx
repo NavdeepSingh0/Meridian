@@ -18,7 +18,6 @@ export default function Navbar() {
     { href: '#features', label: 'Your Toolkit' },
     { href: '#how-it-works', label: 'The Journey' },
     { href: '#templates', label: 'Designs' },
-    { href: '#ats-analysis', label: 'ATS Compass' },
   ];
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
