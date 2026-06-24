@@ -44,11 +44,13 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
         token = auth_parts[1]
 
         try:
-            decoded_token = auth.verify_id_token(token)
+            # Add clock_skew_seconds to handle local clock drift
+            decoded_token = auth.verify_id_token(token, clock_skew_seconds=300)
         except auth.ExpiredIdTokenError:
             raise exceptions.AuthenticationFailed('The authentication token has expired.')
-        except auth.InvalidIdTokenError:
-            raise exceptions.AuthenticationFailed('Invalid authentication token.')
+        except auth.InvalidIdTokenError as e:
+            print(f"InvalidIdTokenError details: {e}")
+            raise exceptions.AuthenticationFailed(f'Invalid authentication token: {str(e)}')
         except Exception as e:
             raise exceptions.AuthenticationFailed(f'Error validating token: {str(e)}')
 
