@@ -25,7 +25,6 @@ export const metadata = {
 };
 
 import Providers from './providers';
-import MobileWarningPopup from '@/components/shared/MobileWarningPopup';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -36,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           {children}
-          <MobileWarningPopup />
         </Providers>
       </body>
     </html>

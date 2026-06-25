@@ -39,8 +39,8 @@ export default function Navbar() {
           <Logo width={160} />
         </a>
 
-        {/* Nav links — always visible, no Tailwind breakpoints */}
-        <ul style={{ display: 'flex', alignItems: 'center', listStyle: 'none', margin: 0, padding: 0, gap: '6px' }}>
+        {/* Nav links — hidden on mobile */}
+        <ul className="hidden md:flex items-center m-0 p-0 gap-1.5" style={{ listStyle: 'none' }}>
           {navLinks.map((link) => (
             <li key={link.href}>
               <a href={link.href} onClick={(e) => scrollToSection(e, link.href)} className="nav-link-pill">

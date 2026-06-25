@@ -25,15 +25,10 @@ export default function HeroSection() {
 
       {/* Two-column hero layout */}
       <div
-        className="container"
+        className="container relative z-50 grid grid-cols-1 md:grid-cols-2 items-center"
         style={{
-          position: 'relative',
-          zIndex: 50,
           paddingTop: 'calc(76px + clamp(60px, 8vw, 100px))',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
           gap: 'clamp(32px, 5vw, 64px)',
-          alignItems: 'center',
         }}
       >
         {/* LEFT COLUMN — all copy */}
