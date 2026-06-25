@@ -14,7 +14,9 @@ export default function LandingPage() {
     <>
       <Navbar />
       <main className="relative">
-        <WindingLineMap />
+        <div className="hidden md:block">
+          <WindingLineMap />
+        </div>
         <HeroSection />
         <StatsStrip />
         <FeaturesSection />
