@@ -64,7 +64,7 @@ export default function ATSSection() {
 
             {/* Original Hand-Drawn Sketch Arrow, positioned to point down at the Experience row */}
             <svg
-              className="absolute pointer-events-none z-20"
+              className="hidden md:block absolute pointer-events-none z-20"
               style={{
                 top: '185px',
                 left: '-50px',

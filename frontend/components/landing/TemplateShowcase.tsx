@@ -63,8 +63,9 @@ export default function TemplateShowcase() {
             </div>
           </motion.div>
 
-          {/* RIGHT — fanned cards */}
+          {/* RIGHT — fanned cards (Desktop) */}
           <div
+            className="hidden md:block"
             style={{
               position: 'relative',
               height: '420px',
@@ -104,6 +105,26 @@ export default function TemplateShowcase() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
                   />
                 </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* RIGHT — stacked cards (Mobile) */}
+          <div className="md:hidden flex flex-col gap-6 mt-8 w-full px-4">
+            {templates.map((t, i) => (
+              <motion.div
+                key={`mobile-${t.name}`}
+                className="w-full rounded-xl overflow-hidden shadow-lg bg-white"
+                style={{ border: '1px solid var(--color-border)' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.1 * i }}
+              >
+                <img
+                  src={`/template-${t.name.toLowerCase()}-v2.png`}
+                  alt={`${t.name} resume template preview`}
+                  style={{ width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }}
+                />
               </motion.div>
             ))}
           </div>

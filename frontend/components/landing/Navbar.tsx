@@ -51,12 +51,13 @@ export default function Navbar() {
         </ul>
 
         {/* Right actions — always visible */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button className="btn-secondary-nav" style={{ display: 'inline-flex', cursor: 'pointer', border: 'none' }} onClick={() => setShowAuthModal(true)}>
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <button className="btn-secondary-nav px-2 sm:px-4" style={{ display: 'inline-flex', cursor: 'pointer', border: 'none' }} onClick={() => setShowAuthModal(true)}>
             Sign in
           </button>
-          <Link href="/builder" className="btn-primary-nav" style={{ display: 'inline-flex' }}>
-            Get Started →
+          <Link href="/builder" className="btn-primary-nav px-3 sm:px-[18px]" style={{ display: 'inline-flex' }}>
+            <span className="sm:hidden">Start</span>
+            <span className="hidden sm:inline">Get Started →</span>
           </Link>
         </div>
 
