@@ -1,5 +1,6 @@
 import React from 'react';
 import { useResumeStore } from '../../lib/store/resumeStore';
+import { ResumeData } from '../../lib/types/resume';
 import styles from '../../app/builder/builder.module.css';
 
 interface HighlightedSection {
@@ -9,7 +10,7 @@ interface HighlightedSection {
 
 interface MinimalTemplateProps {
   highlightedSections?: HighlightedSection[];
-  data?: any;
+  data?: ResumeData;
 }
 
 // ── Module-level sub-components ───────────────────────────────────────────────
@@ -77,7 +78,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
     basics.email,
     basics.phone,
     basics.location?.city ? `${basics.location.city}${basics.location.region ? `, ${basics.location.region}` : ''}` : '',
-    ...(basics.profiles?.map((p: any) => p.url.replace(/^https?:\/\//, '')) ?? []),
+    ...(basics.profiles?.map((p) => p.url.replace(/^https?:\/\//, '')) ?? []),
   ].filter(Boolean);
 
   return (
@@ -134,7 +135,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...workProps.style }}>
           {workProps.marker && <NumberMarker marker={workProps.marker} />}
           <SectionTitle>Experience</SectionTitle>
-          {work.map((job: any, idx: any) => (
+          {work.map((job, idx) => (
             <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.15em' }}>
                 <div>
@@ -149,7 +150,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
               </div>
               {job.highlights.length > 0 && (
                 <ul style={{ margin: '0.3em 0 0', paddingLeft: '1.2em', fontSize: '0.85em', color: '#333' }}>
-                  {job.highlights.map((h: any, i: any) => (
+                  {job.highlights.map((h, i) => (
                     <li key={i} style={{ marginBottom: '0.2em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -164,7 +165,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...projectsProps.style }}>
           {projectsProps.marker && <NumberMarker marker={projectsProps.marker} />}
           <SectionTitle>Projects</SectionTitle>
-          {projects.map((proj: any, idx: any) => (
+          {projects.map((proj, idx) => (
             <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1em' : 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', gap: '0 1em', marginBottom: '0.12em' }}>
                 <div>
@@ -186,7 +187,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
               )}
               {proj.highlights.length > 0 && (
                 <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.85em', color: '#333' }}>
-                  {proj.highlights.map((h: any, i: any) => (
+                  {proj.highlights.map((h, i) => (
                     <li key={i} style={{ marginBottom: '0.2em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -201,7 +202,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...eduProps.style }}>
           {eduProps.marker && <NumberMarker marker={eduProps.marker} />}
           <SectionTitle>Education</SectionTitle>
-          {education.map((edu: any, idx: any) => (
+          {education.map((edu, idx) => (
             <div key={idx} style={{
               display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline',
               gap: '0 1em', marginBottom: idx < education.length - 1 ? '0.5em' : 0,
@@ -227,7 +228,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
           {skillsProps.marker && <NumberMarker marker={skillsProps.marker} />}
           <SectionTitle>Skills</SectionTitle>
           <div style={{ fontSize: '0.85em', lineHeight: 1.7, color: '#333' }}>
-            {skills.map((sg: any, idx: any) => (
+            {skills.map((sg, idx) => (
               <div key={idx} style={{ marginBottom: idx < skills.length - 1 ? '0.3em' : 0 }}>
                 <strong style={{ color: '#111' }}>{sg.name}:</strong>{' '}
                 {sg.keywords.join(', ')}
@@ -242,7 +243,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
         <div style={{ marginBottom: '1.2em', ...certProps.style }}>
           {certProps.marker && <NumberMarker marker={certProps.marker} />}
           <SectionTitle>Certifications</SectionTitle>
-          {certificates.map((cert: any, idx: any) => (
+          {certificates.map((cert, idx) => (
             <div key={idx} style={{
               display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline',
               gap: '0 1em', marginBottom: idx < certificates.length - 1 ? '0.4em' : 0,
@@ -261,7 +262,7 @@ export default function MinimalTemplate({ highlightedSections = [], data }: Mini
       {awards.length > 0 && (
         <div style={{ marginBottom: '1.2em' }}>
           <SectionTitle>Awards &amp; Recognition</SectionTitle>
-          {awards.map((award: any, idx: any) => (
+          {awards.map((award, idx) => (
             <div key={idx} style={{ fontSize: '0.85em', color: '#333', marginBottom: idx < awards.length - 1 ? '0.35em' : 0, lineHeight: 1.55 }}>
               {award.title}
             </div>

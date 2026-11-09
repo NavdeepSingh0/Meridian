@@ -1,21 +1,48 @@
 import React, { useState } from 'react';
 import { useResumeStore } from '../../../lib/store/resumeStore';
-import { useAiGenerate } from '../../../lib/hooks/useAiGenerate';
+import { useGenerateText } from '../../../lib/hooks/useAnalysis';
+import { useUserStore } from '../../../lib/store/userStore';
+import { getErrorMessage } from '../../../lib/api/client';
+import { toast } from '../../shared/Toast';
 import styles from '../../../app/builder/builder.module.css';
 
 export default function WorkForm() {
   const { resumeData, addWorkEntry, updateWorkEntry, removeWorkEntry, jobDescription } = useResumeStore();
   const { work } = resumeData;
-  const { generate, isGenerating } = useAiGenerate();
+  const generate = useGenerateText();
+  const isGenerating = generate.isPending;
+  const signedIn = !!useUserStore((s) => s.firebaseUser);
   const [generatingIndex, setGeneratingIndex] = useState<{job: number, highlight: number} | null>(null);
 
   const handleHighlightGenerate = async (jobIndex: number, highlightIndex: number) => {
+    if (!signedIn) {
+      toast.error('Sign in to use AI writing help.');
+      return;
+    }
+    const job = work[jobIndex];
+    const existing = job.highlights[highlightIndex] ?? '';
     setGeneratingIndex({ job: jobIndex, highlight: highlightIndex });
-    const result = await generate('bullet', resumeData, jobDescription);
-    const highlights = [...work[jobIndex].highlights];
-    highlights[highlightIndex] = result;
-    updateWorkEntry(jobIndex, 'highlights', highlights);
-    setGeneratingIndex(null);
+    try {
+      // With text already there, the model improves it; with an empty bullet, it drafts one.
+      const text = await generate.mutateAsync({
+        kind: 'bullet',
+        resume: resumeData,
+        jobDescription,
+        context: {
+          company: job.name,
+          position: job.position,
+          existing_bullet: existing || undefined,
+          other_bullets: job.highlights.filter((_, i) => i !== highlightIndex && _.trim()),
+        },
+      });
+      const highlights = [...work[jobIndex].highlights];
+      highlights[highlightIndex] = text;
+      updateWorkEntry(jobIndex, 'highlights', highlights);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't generate that bullet."));
+    } finally {
+      setGeneratingIndex(null);
+    }
   };
 
   const handleHighlightChange = (index: number, highlightIndex: number, value: string) => {
@@ -109,7 +136,7 @@ export default function WorkForm() {
                     <textarea
                       className={styles.textareaField}
                       style={{ minHeight: '60px', flex: 1, opacity: isThisGenerating ? 0.7 : 1 }}
-                      value={isThisGenerating ? "Generating..." : highlight}
+                      value={highlight}
                       onChange={(e) => handleHighlightChange(index, hIndex, e.target.value)}
                       placeholder="Led the redesign of the core platform..."
                       disabled={isThisGenerating}

@@ -154,7 +154,15 @@ DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=sqlite:///db.sqlite3
 GROQ_API_KEY=your_groq_api_key_here
 FIREBASE_CREDENTIALS={"type": "service_account", "project_id": "..."}
+
+# Production only (config.settings.prod)
+CORS_ALLOWED_ORIGINS=https://your-frontend.vercel.app   # warns and allows all origins if unset
+DJANGO_ALLOWED_HOSTS=your-api.onrender.com               # defaults to .onrender.com
+AI_THROTTLE_RATE=20/min                                  # optional
 ```
+
+Firebase Admin is initialised lazily on the first authenticated request, so the app, tests and management
+commands start without credentials. Without `GROQ_API_KEY` the AI endpoints run in **demo mode** (canned results).
 
 ### Frontend Setup
 
@@ -164,8 +172,14 @@ cd frontend
 # Install dependencies
 npm install
 
-# Create local environment file
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+# Create frontend/.env.local
+#   NEXT_PUBLIC_API_URL=http://localhost:8000
+#   NEXT_PUBLIC_FIREBASE_API_KEY=...
+#   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+#   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+#   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+#   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+#   NEXT_PUBLIC_FIREBASE_APP_ID=...
 
 # Start development server
 npm run dev
@@ -186,7 +200,7 @@ All endpoints require Firebase JWT authentication via `Authorization: Bearer <to
 | GET | `/api/resumes/` | List user's resumes |
 | POST | `/api/resumes/` | Create new resume |
 | GET | `/api/resumes/<id>/` | Get resume details |
-| PUT | `/api/resumes/<id>/` | Update resume |
+| PATCH | `/api/resumes/<id>/` | Update resume (title, template, content) |
 | DELETE | `/api/resumes/<id>/` | Delete resume |
 
 ### AI Analysis
@@ -195,8 +209,13 @@ All endpoints require Firebase JWT authentication via `Authorization: Bearer <to
 | POST | `/api/analysis/critique/` | Generate AI critique | 1 |
 | POST | `/api/analysis/ats-score/` | Calculate ATS match score | 1 |
 | POST | `/api/analysis/apply-suggestion/` | Rewrite section with suggestion | 1 |
-| POST | `/api/analysis/parse-pdf/` | Extract data from PDF upload | 1 |
+| POST | `/api/analysis/generate/` | Write a summary / improve a bullet | 1 |
+| POST | `/api/analysis/parse-pdf/` | Extract data from a PDF upload (≤ 5 MB, text-based) | 1 |
 | POST | `/api/analysis/export-pdf/` | Generate PDF download | 0 |
+
+Credits are **reserved before** the AI call and **refunded if it fails**, so a failed request never costs a credit.
+AI endpoints are rate limited (`AI_THROTTLE_RATE`, default `20/min` per user). Error responses carry a user-safe
+`error`/`detail` message; internals are logged server-side only.
 
 **Request/Response Example (Critique):**
 ```json
@@ -233,7 +252,7 @@ Instead of 6-8 relational tables, the entire resume is stored in a single Postgr
 ### 2. Defensive AI Engineering Pipeline
 Every LLM response passes through strict validation:
 ```python
-def _call_gemini_and_parse(system_instruction, user_message, response_schema):
+def _call_llm_and_parse(system_instruction, user_message, response_schema):
     # 1. Call Groq with JSON schema enforcement
     # 2. Check finish_reason for safety filters
     # 3. Strip markdown code fences
@@ -280,21 +299,21 @@ except (ImportError, OSError):
 ### Backend Tests
 ```bash
 cd backend
-pytest  # Runs all tests in analysis/tests/
-pytest --cov=analysis  # With coverage report
+pip install -r requirements/dev.txt
+pytest   # uses config.settings.test — no secrets, Firebase or network needed
 ```
 
-Test coverage includes:
-- Service layer AI integration tests
-- API endpoint validation tests
-- Mock data fallback scenarios
-- PDF rendering tests
+Covers: authentication on every endpoint, credit reservation / refund / out-of-credits, schema validation,
+PDF upload validation (type, size, scanned), real PDF parsing through `pdfplumber`, LLM-output normalisation,
+Groq retry / fallback behaviour, and per-user resume isolation.
 
 ### Frontend Testing
 ```bash
 cd frontend
-npm run lint  # ESLint validation
-npm run build  # Production build verification
+npm test            # vitest: store persistence, error handling, utilities
+npm run typecheck   # tsc --noEmit
+npm run lint        # ESLint
+npm run build       # production build
 ```
 
 ---

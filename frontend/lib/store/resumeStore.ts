@@ -32,9 +32,25 @@ export const initialResumeData: ResumeData = {
 
 export type PanelState = 'editing' | 'scored' | 'feedback';
 
+/**
+ * Where the current document is persisted and how that is going.
+ * - local: browser-only draft (no cloud resume open)
+ * - saved / saving / error: state of the cloud autosave for the open cloud resume
+ */
+export type SaveStatus = 'local' | 'saved' | 'saving' | 'error';
+
+interface CloudResumeInput {
+  id: number;
+  title: string;
+  template_id: string;
+  document_data: ResumeData;
+}
+
 interface ResumeStore {
   // State
   resumeData: ResumeData;
+  documentName: string;
+  saveStatus: SaveStatus;
   selectedTemplateId: string;
   panelState: PanelState;
   atsResult: ATSResult | null;
@@ -90,11 +106,15 @@ interface ResumeStore {
   setUser: (user: unknown) => void;
   resetToEditing: () => void;
   
-  // Phase 2: DB loading
+  // Cloud documents
   currentResumeId: number | null;
   setCurrentResumeId: (id: number) => void;
-  loadResumeFromDB: (resumeData: ResumeData, id: number | null) => void;
-  clearCurrentResume: () => void;
+  setDocumentName: (name: string) => void;
+  setSaveStatus: (status: SaveStatus) => void;
+  /** Replace the editor contents with a cloud resume (atomic: data, id, title, template). */
+  loadCloudResume: (resume: CloudResumeInput) => void;
+  /** Leave any cloud resume and restore the browser-only draft from localStorage. */
+  loadLocalDraft: () => void;
 
   // Hydration
   hydratePersistedState: (persistedState: Partial<ResumeStore>) => void;
@@ -110,6 +130,8 @@ interface ResumeStore {
 export const useResumeStore = create<ResumeStore>((set) => ({
   // Initial State
   resumeData: initialResumeData,
+  documentName: '',
+  saveStatus: 'local',
   selectedTemplateId: 'modern',
   panelState: 'editing',
   atsResult: null,
@@ -121,13 +143,33 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   hasDownloadedFreeResume: false,
   user: null,
   currentResumeId: null,
-  setCurrentResumeId: (id) => set({ currentResumeId: id }),
+  setCurrentResumeId: (id) => set({ currentResumeId: id, saveStatus: 'saved' }),
+  setDocumentName: (name) => set({ documentName: name }),
+  setSaveStatus: (status) => set({ saveStatus: status }),
 
   // Hydration
   hydratePersistedState: (state) => set((prev) => ({ ...prev, ...state })),
 
-  loadResumeFromDB: (resumeData, id) => set({ resumeData, currentResumeId: id }),
-  clearCurrentResume: () => set({ resumeData: initialResumeData, currentResumeId: null }),
+  loadCloudResume: (resume) => set({
+    resumeData: resume.document_data,
+    currentResumeId: resume.id,
+    documentName: resume.title,
+    selectedTemplateId: resume.template_id,
+    saveStatus: 'saved',
+    undoStack: [],
+    panelState: 'editing',
+    atsResult: null,
+    critiqueResult: null,
+  }),
+  loadLocalDraft: () => set({
+    ...readLocalDraft(),
+    currentResumeId: null,
+    saveStatus: 'local',
+    undoStack: [],
+    panelState: 'editing',
+    atsResult: null,
+    critiqueResult: null,
+  }),
   setResumeData: (data) => set({ resumeData: data }),
 
   setSelectedTemplateId: (id) => set({ selectedTemplateId: id }),
@@ -311,58 +353,93 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   resetToEditing: () => set({ panelState: 'editing', atsResult: null, critiqueResult: null }),
 }));
 
-// Persistence Subscription (Debounced ~500ms)
-const STORAGE_KEY = 'meridian:resume:v1_test';
-let timeoutId: ReturnType<typeof setTimeout> | null = null;
+// ── Local draft persistence ──────────────────────────────────────────────────
+// The browser-only draft (used when no cloud resume is open) lives in
+// localStorage. It is only written while NO cloud resume is open, so editing a
+// cloud document never overwrites the local draft.
+const STORAGE_KEY = 'meridian:draft:v1';
+const LEGACY_STORAGE_KEY = 'meridian:resume:v1_test';
+
+type DraftState = Pick<
+  ResumeStore,
+  'resumeData' | 'documentName' | 'selectedTemplateId' | 'jobDescription' | 'fontSize' | 'documentMargin' | 'hasDownloadedFreeResume'
+>;
+
+function readLocalDraft(): Partial<DraftState> {
+  if (typeof window === 'undefined') return {};
+  try {
+    // One-time migration from the old test key.
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy && !localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, legacy);
+    }
+    if (legacy) localStorage.removeItem(LEGACY_STORAGE_KEY);
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return { ...emptyDraft };
+    const parsed = JSON.parse(stored);
+    return {
+      resumeData: parsed.resumeData ?? initialResumeData,
+      documentName: typeof parsed.documentName === 'string' ? parsed.documentName : '',
+      selectedTemplateId: parsed.selectedTemplateId ?? 'modern',
+      jobDescription: typeof parsed.jobDescription === 'string' ? parsed.jobDescription : '',
+      fontSize: typeof parsed.fontSize === 'number' ? parsed.fontSize : 10,
+      documentMargin: typeof parsed.documentMargin === 'number' ? parsed.documentMargin : 1,
+      hasDownloadedFreeResume: !!parsed.hasDownloadedFreeResume,
+    };
+  } catch (e) {
+    console.error('Failed to read resume draft from localStorage', e);
+    return { ...emptyDraft };
+  }
+}
+
+const emptyDraft: Partial<DraftState> = {
+  resumeData: initialResumeData,
+  documentName: '',
+  selectedTemplateId: 'modern',
+  jobDescription: '',
+  fontSize: 10,
+  documentMargin: 1,
+};
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 if (typeof window !== 'undefined') {
-  // 1. Initial Load
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Validate or safely hydrate
-      useResumeStore.getState().hydratePersistedState({
-        ...(parsed.resumeData && { resumeData: parsed.resumeData }),
-        ...(parsed.selectedTemplateId && { selectedTemplateId: parsed.selectedTemplateId }),
-        ...(parsed.hasDownloadedFreeResume !== undefined && { hasDownloadedFreeResume: parsed.hasDownloadedFreeResume }),
-        ...(typeof parsed.jobDescription === 'string' && { jobDescription: parsed.jobDescription }),
-        ...(typeof parsed.fontSize === 'number' && { fontSize: parsed.fontSize }),
-        ...(typeof parsed.documentMargin === 'number' && { documentMargin: parsed.documentMargin }),
-      });
-    }
-  } catch (e) {
-    console.error("Failed to parse resume from localStorage", e);
-  }
+  // Initial load: hydrate from the local draft.
+  useResumeStore.getState().hydratePersistedState(readLocalDraft());
 
-  // 2. Subscribe to changes
-  useResumeStore.subscribe((state, prevState) => {
-    // Only trigger save if relevant fields changed
-    if (
-      state.resumeData !== prevState.resumeData ||
-      state.selectedTemplateId !== prevState.selectedTemplateId ||
-      state.jobDescription !== prevState.jobDescription ||
-      state.fontSize !== prevState.fontSize ||
-      state.documentMargin !== prevState.documentMargin ||
-      state.hasDownloadedFreeResume !== prevState.hasDownloadedFreeResume
-    ) {
-      if (timeoutId) clearTimeout(timeoutId);
-      
-      timeoutId = setTimeout(() => {
-        const stateToSave = {
-          resumeData: state.resumeData,
-          selectedTemplateId: state.selectedTemplateId,
-          jobDescription: state.jobDescription,
-          fontSize: state.fontSize,
-          documentMargin: state.documentMargin,
-          hasDownloadedFreeResume: state.hasDownloadedFreeResume,
-        };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-        } catch (e) {
-          console.error("Failed to save resume to localStorage", e);
-        }
-      }, 500);
-    }
+  useResumeStore.subscribe((state, prev) => {
+    if (state.currentResumeId !== null) return; // cloud documents are saved by the cloud autosave
+
+    const changed =
+      state.resumeData !== prev.resumeData ||
+      state.documentName !== prev.documentName ||
+      state.selectedTemplateId !== prev.selectedTemplateId ||
+      state.jobDescription !== prev.jobDescription ||
+      state.fontSize !== prev.fontSize ||
+      state.documentMargin !== prev.documentMargin ||
+      state.hasDownloadedFreeResume !== prev.hasDownloadedFreeResume;
+    if (!changed) return;
+
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      // Re-check at fire time: a cloud resume may have been opened in the meantime.
+      const current = useResumeStore.getState();
+      if (current.currentResumeId !== null) return;
+      const draft: Partial<DraftState> = {
+        resumeData: current.resumeData,
+        documentName: current.documentName,
+        selectedTemplateId: current.selectedTemplateId,
+        jobDescription: current.jobDescription,
+        fontSize: current.fontSize,
+        documentMargin: current.documentMargin,
+        hasDownloadedFreeResume: current.hasDownloadedFreeResume,
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      } catch (e) {
+        console.error('Failed to save resume draft to localStorage', e);
+      }
+    }, 500);
   });
 }

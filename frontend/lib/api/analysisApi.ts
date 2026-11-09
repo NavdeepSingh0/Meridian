@@ -1,57 +1,41 @@
-import axios from 'axios';
-import { auth } from '../firebase/client';
 import { ResumeData } from '../types/resume';
 import { ATSResult, CritiqueResult } from '../types/analysis';
+import { createApiClient } from './client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api/analysis`
-  : 'http://localhost:8000/api/analysis';
+const apiClient = createApiClient('/api/analysis');
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-});
+export interface ExportSettings {
+  font_size: number;
+  document_margin: number;
+}
 
-apiClient.interceptors.request.use(async (config) => {
-  const user = auth.currentUser;
-  if (user) {
-    const token = await user.getIdToken(true);
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+export type GenerateKind = 'summary' | 'bullet';
 
 export const analysisApi = {
-  critique: async (data: ResumeData): Promise<CritiqueResult> => {
-    const response = await apiClient.post(`/critique/`, {
-      resume_data: data
-    });
-    return response.data;
-  },
+  critique: async (data: ResumeData): Promise<CritiqueResult> =>
+    (await apiClient.post('/critique/', { resume_data: data })).data,
 
-  atsScore: async (data: ResumeData, jobDescription: string): Promise<ATSResult> => {
-    const response = await apiClient.post(`/ats-score/`, {
-      resume_data: data,
-      job_description: jobDescription,
-    });
-    return response.data;
-  },
+  atsScore: async (data: ResumeData, jobDescription: string): Promise<ATSResult> =>
+    (await apiClient.post('/ats-score/', { resume_data: data, job_description: jobDescription })).data,
 
-  exportPdf: async (data: ResumeData, templateName: string = 'classic', settings?: Record<string, unknown> | null): Promise<Blob> => {
-    const response = await apiClient.post(`/export-pdf/`, {
-      resume_data: data,
-      template_id: templateName,
-      settings: settings || { font_size: 10, document_margin: 1 }
-    }, {
-      responseType: 'blob'
-    });
-    return response.data;
-  },
+  exportPdf: async (
+    data: ResumeData,
+    templateName: string = 'classic',
+    settings: ExportSettings = { font_size: 10, document_margin: 1 },
+  ): Promise<Blob> =>
+    (
+      await apiClient.post(
+        '/export-pdf/',
+        { resume_data: data, template_id: templateName, settings },
+        { responseType: 'blob' },
+      )
+    ).data,
 
   applySuggestion: async (sectionName: string, sectionData: unknown, suggestion: string): Promise<unknown> => {
-    const response = await apiClient.post(`/apply-suggestion/`, {
+    const response = await apiClient.post('/apply-suggestion/', {
       section_name: sectionName,
       section_data: sectionData,
-      suggestion: suggestion,
+      suggestion,
     });
     return JSON.parse(response.data.rewritten_section_json);
   },
@@ -59,11 +43,10 @@ export const analysisApi = {
   parsePdf: async (file: File): Promise<{ resume_data: ResumeData; warning?: string }> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await apiClient.post(`/parse-pdf/`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  }
+    // Let the browser set the multipart boundary; do not set Content-Type manually.
+    return (await apiClient.post('/parse-pdf/', formData)).data;
+  },
+
+  generateText: async (kind: GenerateKind, resume: ResumeData, jobDescription: string, context?: unknown): Promise<string> =>
+    (await apiClient.post('/generate/', { kind, resume_data: resume, job_description: jobDescription, context })).data.text,
 };
-
-

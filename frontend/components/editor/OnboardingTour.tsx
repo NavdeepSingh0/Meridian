@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Joyride, Step, STATUS } from 'react-joyride';
+import React from 'react';
+import { Joyride, Step, STATUS, EventData } from 'react-joyride';
 
 interface OnboardingTourProps {
   run: boolean;
@@ -7,12 +7,6 @@ interface OnboardingTourProps {
 }
 
 export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const steps: Step[] = [
     {
       target: 'body',
@@ -65,7 +59,7 @@ export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
     }
   ];
 
-  const handleJoyrideCallback = (data: any) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
@@ -74,32 +68,22 @@ export default function OnboardingTour({ run, onFinish }: OnboardingTourProps) {
     }
   };
 
-  if (!mounted) return null;
-
   return (
     <Joyride
       steps={steps}
       run={run}
       onEvent={handleJoyrideCallback}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      options={{
+        primaryColor: '#64B6AC',
+        textColor: '#1C2B28',
+        zIndex: 10000,
+        showProgress: true,
+      }}
       styles={{
-        options: {
-          primaryColor: '#64B6AC',
-          zIndex: 10000,
-          textColor: '#2D3A3A',
-        },
-        tooltip: {
-          fontFamily: 'var(--font-sans)',
-          borderRadius: '12px',
-        },
-        buttonPrimary: {
-          borderRadius: '6px',
-          backgroundColor: '#64B6AC',
-        },
-        buttonBack: {
-          color: '#4A6260',
-        }
-      } as any}
+        tooltip: { fontFamily: 'var(--font-sans)', borderRadius: '12px' },
+        buttonPrimary: { borderRadius: '6px', backgroundColor: '#64B6AC' },
+        buttonBack: { color: '#4A6260' },
+      }}
     />
   );
 }

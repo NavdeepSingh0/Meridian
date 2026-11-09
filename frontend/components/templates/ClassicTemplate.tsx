@@ -1,5 +1,6 @@
 import React from 'react';
 import { useResumeStore } from '../../lib/store/resumeStore';
+import { ResumeData } from '../../lib/types/resume';
 import styles from '../../app/builder/builder.module.css';
 
 interface HighlightedSection {
@@ -9,7 +10,7 @@ interface HighlightedSection {
 
 interface ClassicTemplateProps {
   highlightedSections?: HighlightedSection[];
-  data?: any;
+  data?: ResumeData;
 }
 
 // ── Module-level sub-components (must not be defined inside render) ──────────
@@ -74,7 +75,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
   const skillsProps = getHighlightProps('skills');
   const certProps = getHighlightProps('certificates');
 
-  const profileStr = basics.profiles?.map((p: any) => {
+  const profileStr = basics.profiles?.map((p) => {
     const clean = p.url.replace(/^https?:\/\//, '');
     return `${p.network}: ${clean}`;
   }).join('  ·  ');
@@ -142,7 +143,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
         <div style={{ marginBottom: '1.4em', ...workProps.style }}>
           {workProps.marker && <NumberMarker marker={workProps.marker} />}
           <SectionTitle>Experience</SectionTitle>
-          {work.map((job: any, idx: any) => (
+          {work.map((job, idx) => (
             <div key={idx} style={{ marginBottom: idx < work.length - 1 ? '1.1em' : 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.15em' }}>
                 <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>
@@ -157,7 +158,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
               </div>
               {job.highlights.length > 0 && (
                 <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
-                  {job.highlights.map((h: any, i: any) => (
+                  {job.highlights.map((h, i) => (
                     <li key={i} style={{ marginBottom: '0.25em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -172,7 +173,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
         <div style={{ marginBottom: '1.4em', ...projectsProps.style }}>
           {projectsProps.marker && <NumberMarker marker={projectsProps.marker} />}
           <SectionTitle>Projects</SectionTitle>
-          {projects.map((proj: any, idx: any) => (
+          {projects.map((proj, idx) => (
             <div key={idx} style={{ marginBottom: idx < projects.length - 1 ? '1.1em' : 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.15em' }}>
                 <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>{proj.name}</h3>
@@ -192,7 +193,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
               )}
               {proj.highlights.length > 0 && (
                 <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
-                  {proj.highlights.map((h: any, i: any) => (
+                  {proj.highlights.map((h, i) => (
                     <li key={i} style={{ marginBottom: '0.25em', lineHeight: 1.55 }}>{h}</li>
                   ))}
                 </ul>
@@ -207,7 +208,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
         <div style={{ marginBottom: '1.4em', ...eduProps.style }}>
           {eduProps.marker && <NumberMarker marker={eduProps.marker} />}
           <SectionTitle>Education</SectionTitle>
-          {education.map((edu: any, idx: any) => (
+          {education.map((edu, idx) => (
             <div key={idx} style={{ marginBottom: idx < education.length - 1 ? '0.8em' : 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <h3 style={{ fontSize: '0.95em', fontWeight: 700, color: '#111', margin: 0 }}>
@@ -231,7 +232,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
           {skillsProps.marker && <NumberMarker marker={skillsProps.marker} />}
           <SectionTitle>Skills</SectionTitle>
           <div style={{ fontSize: '0.87em', lineHeight: 1.7, color: '#333' }}>
-            {skills.map((sg: any, idx: any) => (
+            {skills.map((sg, idx) => (
               <span key={idx}>
                 <strong style={{ color: '#111', fontWeight: 600 }}>{sg.name}: </strong>
                 {sg.keywords.join(', ')}
@@ -247,7 +248,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
         <div style={{ marginBottom: '1.4em', ...certProps.style }}>
           {certProps.marker && <NumberMarker marker={certProps.marker} />}
           <SectionTitle>Certifications</SectionTitle>
-          {certificates.map((cert: any, idx: any) => (
+          {certificates.map((cert, idx) => (
             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: idx < certificates.length - 1 ? '0.5em' : 0 }}>
               <div>
                 <span style={{ fontSize: '0.9em', fontWeight: 600, color: '#111' }}>{cert.name}</span>
@@ -264,7 +265,7 @@ export default function ClassicTemplate({ highlightedSections = [], data }: Clas
         <div style={{ marginBottom: '1.4em' }}>
           <SectionTitle>Awards &amp; Recognition</SectionTitle>
           <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: '0.87em', color: '#333' }}>
-            {awards.map((award: any, idx: any) => (
+            {awards.map((award, idx) => (
               <li key={idx} style={{ marginBottom: '0.35em', lineHeight: 1.55 }}>
                 {award.title}
               </li>

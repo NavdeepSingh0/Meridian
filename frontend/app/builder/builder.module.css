@@ -48,16 +48,27 @@
   flex-direction: column;
 }
 
+/* Fills the viewport below the fixed top nav; the sidebars are fixed, so only <main> needs margins. */
+.builderBody {
+  flex: 1;
+  display: flex;
+  height: 100vh;
+  box-sizing: border-box;
+  padding-top: 64px;
+  min-height: 0;
+}
+
 .saasMainCanvas {
   flex: 1;
+  min-width: 0; /* let the canvas shrink below the paper's width instead of overflowing under the sidebars */
   margin-left: 320px;
   margin-right: 360px;
-  overflow-y: auto;
+  overflow: auto;
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 40px 32px;
+  align-items: flex-start; /* with margin: 0 auto on the paper wrapper: centred when it fits, scrollable when it doesn't */
+  padding: 32px 32px 96px;
 }
 
 .saasRightSidebar {
@@ -1322,6 +1333,18 @@
   }
 
   /* Reset layout for printing the canvas */
+  .builderBody {
+    height: auto !important;
+    padding-top: 0 !important;
+    display: block !important;
+  }
+
+  .paperScale {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
   .saasLayoutWrapper {
     padding-top: 0 !important;
     background-color: white !important;

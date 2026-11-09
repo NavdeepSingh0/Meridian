@@ -6,6 +6,8 @@ import { useResumeStore } from '../../lib/store/resumeStore';
 import { useAtsScore, useCritique, useApplySuggestion } from '../../lib/hooks/useAnalysis';
 import AtsScoreView from './AtsScoreView';
 import CritiqueFeedbackView from './CritiqueFeedbackView';
+import { getErrorMessage } from '../../lib/api/client';
+import { toast } from '../shared/Toast';
 
 export default function AnalysisPanel() {
   const [activeTab, setActiveTab] = useState<'target' | 'chat'>('target');
@@ -56,7 +58,8 @@ export default function AnalysisPanel() {
         onSuccess: (rewrittenSectionData) => {
           injectImprovement(section, rewrittenSectionData);
           setLastAppliedSuggestion(suggestion);
-        }
+        },
+        onError: (err) => toast.error(getErrorMessage(err, "Couldn't apply that suggestion."))
       }
     );
   };
@@ -68,6 +71,10 @@ export default function AnalysisPanel() {
 
   const isLoading = atsScoreMutation.isPending || critiqueMutation.isPending;
   const isError = atsScoreMutation.isError || critiqueMutation.isError;
+  const errorMessage = getErrorMessage(
+    atsScoreMutation.error ?? critiqueMutation.error,
+    'Something went wrong while analyzing your resume.',
+  );
 
   return (
     <aside className={`${builderStyles.saasRightSidebar} tour-analysis-panel`}>
@@ -137,7 +144,7 @@ export default function AnalysisPanel() {
         {isError && (
           <div className={builderStyles.panelOverlay}>
             <span className="material-symbols-outlined text-[#EF4444] text-[48px]">error</span>
-            <p className={builderStyles.overlayErrorText}>Failed to analyze.</p>
+            <p className={builderStyles.overlayErrorText} role="alert">{errorMessage}</p>
             <button 
               className={builderStyles.tryAgainBtn}
               onClick={() => { atsScoreMutation.reset(); critiqueMutation.reset(); resetToEditing(); }}

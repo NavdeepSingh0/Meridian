@@ -1,0 +1,27 @@
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 168px;
+  padding: 24px 16px;
+  text-align: center;
+  background: #fff;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.zone:hover { border-color: var(--color-primary); background: rgba(100, 182, 172, 0.04); }
+.zone:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.active { border-color: var(--color-primary); background: rgba(100, 182, 172, 0.1); }
+.loading { cursor: progress; opacity: 0.85; }
+
+.icon { font-size: 36px; color: var(--color-primary); margin-bottom: 4px; }
+.title { margin: 0; font-size: 0.9375rem; font-weight: 600; color: var(--color-ink); word-break: break-word; }
+.hint { margin: 0; font-size: 0.8125rem; color: var(--color-ink-muted); }
+
+.spin { animation: spin 1.2s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

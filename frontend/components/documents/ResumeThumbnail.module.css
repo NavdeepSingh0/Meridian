@@ -1,0 +1,21 @@
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 210 / 250; /* mostly the top of an A4 page — where the content is */
+  overflow: hidden;
+  background: #fff;
+  pointer-events: none;
+  user-select: none;
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 794px;
+  min-height: 1123px;
+  transform-origin: top left;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}

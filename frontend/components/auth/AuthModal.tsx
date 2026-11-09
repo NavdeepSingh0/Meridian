@@ -1,144 +1,141 @@
+'use client';
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { auth } from '../../lib/firebase/client';
+import Modal from '../shared/Modal';
+import { toast } from '../shared/Toast';
+import styles from './AuthModal.module.css';
 
-export default function AuthModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  /** Optional context shown under the title, e.g. "Sign in to export your resume as a PDF." */
+  reason?: string;
+}
+
+const AUTH_ERRORS: Record<string, string> = {
+  'auth/email-already-in-use': 'An account with this email already exists. Try logging in instead.',
+  'auth/invalid-credential': 'Incorrect email or password.',
+  'auth/invalid-email': 'Please enter a valid email address.',
+  'auth/user-not-found': 'No account found with that email.',
+  'auth/weak-password': 'Password must be at least 6 characters.',
+  'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
+  'auth/network-request-failed': 'Network error. Check your connection and try again.',
+};
+
+function authMessage(err: unknown): string {
+  const code = (err as { code?: string })?.code;
+  return (code && AUTH_ERRORS[code]) || 'Something went wrong signing you in. Please try again.';
+}
+
+export default function AuthModal({ isOpen, onClose, onSuccess, reason }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
-        // After signup, onAuthStateChanged will handle fetching profile
-        onSuccess();
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        onSuccess();
       }
-    } catch (err: unknown) {
-      const errorWithCode = err as { code?: string, message?: string };
-      console.error("Firebase auth error:", err);
-      let errorMessage = 'An error occurred during authentication.';
-      if (errorWithCode.code === 'auth/email-already-in-use') errorMessage = 'Email already in use.';
-      else if (errorWithCode.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password.';
-      else if (errorWithCode.code === 'auth/weak-password') errorMessage = 'Password is too weak.';
-      else if (errorWithCode.code) errorMessage = `Auth error: ${errorWithCode.code}`;
-      else if (errorWithCode.message) errorMessage = errorWithCode.message;
-      
-      setError(errorMessage);
+      setPassword('');
+      onSuccess();
+    } catch (err) {
+      console.error('Firebase auth error:', err);
+      setError(authMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleReset = async () => {
+    if (!email) {
+      setError('Enter your email above, then click "Forgot password?".');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError(null);
+      toast.success(`Password reset email sent to ${email}`);
+    } catch (err) {
+      setError(authMessage(err));
+    }
+  };
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999
-    }}>
-      <div style={{
-        background: 'var(--color-surface, #ffffff)',
-        padding: '32px',
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '400px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-        fontFamily: 'var(--font-sans)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: 'var(--color-ink, #111)' }}>
-            {isSignUp ? 'Create an Account' : 'Welcome Back'}
-          </h2>
-          <button 
-            onClick={onClose}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isSignUp ? 'Create your account' : 'Welcome back'}
+      description={reason ?? 'Sign in to save your resumes to the cloud, export PDFs and use AI tools.'}
+    >
+      {error && <div className={styles.error} role="alert">{error}</div>}
+
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="auth-email" className={styles.label}>Email</label>
+          <input
+            id="auth-email"
+            className={styles.input}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="auth-password" className={styles.label}>Password</label>
+          <input
+            id="auth-password"
+            className={styles.input}
+            type="password"
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder={isSignUp ? 'At least 6 characters' : 'Your password'}
+          />
         </div>
 
-        <p style={{ fontSize: '14px', color: '#555', marginBottom: '24px', lineHeight: 1.5 }}>
-          You&apos;ve used your free resume download! Please {isSignUp ? 'sign up' : 'log in'} to continue exporting and saving your resumes.
-        </p>
-
-        {error && (
-          <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>
-            {error}
-          </div>
+        {!isSignUp && (
+          <button type="button" className={styles.linkBtn} onClick={handleReset}>
+            Forgot password?
+          </button>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#333', marginBottom: '6px' }}>Email</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: '8px',
-                border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box'
-              }}
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#333', marginBottom: '6px' }}>Password</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: '8px',
-                border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box'
-              }}
-              placeholder="••••••••"
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={{
-              width: '100%', padding: '12px', borderRadius: '8px',
-              background: 'var(--color-primary, #64B6AC)', color: 'white',
-              border: 'none', fontWeight: 600, fontSize: '15px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '8px',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Log In')}
-          </button>
-        </form>
+        <button type="submit" disabled={loading} className={styles.submit}>
+          {loading ? 'Please wait…' : isSignUp ? 'Create account' : 'Log in'}
+        </button>
+      </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', color: '#555' }}>
-          {isSignUp ? "Already have an account? " : "Don't have an account? "}
-          <button 
-            onClick={() => setIsSignUp(!isSignUp)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-primary, #64B6AC)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-          >
-            {isSignUp ? 'Log in' : 'Sign up'}
-          </button>
-        </div>
-      </div>
-    </div>
+      <p className={styles.switch}>
+        {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+        <button
+          type="button"
+          className={styles.linkBtn}
+          onClick={() => {
+            setIsSignUp((v) => !v);
+            setError(null);
+          }}
+        >
+          {isSignUp ? 'Log in' : 'Sign up'}
+        </button>
+      </p>
+    </Modal>
   );
 }
