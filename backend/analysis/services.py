@@ -1,9 +1,8 @@
 """
 Service layer for AI analysis and PDF rendering.
 
-Integrates with the `google-genai` client, implementing the full defensive
-parsing pipeline, error handling hierarchy, and fallback to mock data
-described in ARCHITECTURE.md §8.6 and §8.7.
+Integrates with the Groq client (Llama 3.3 70B), implementing a defensive
+parsing pipeline, an error-handling hierarchy, and fallback to mock data.
 """
 import time
 import json
@@ -29,19 +28,19 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 class SafetyError(Exception):
-    """Raised when Gemini blocks content due to safety filters (422)."""
+    """Raised when the LLM blocks content or access is denied (422)."""
     pass
 
 class TimeoutOrUnavailableError(Exception):
-    """Raised when Gemini returns 504 or times out (503)."""
+    """Raised when the LLM times out or is unavailable (503)."""
     pass
 
 class BadRequestError(Exception):
-    """Raised when Gemini returns a 400 error (500)."""
+    """Raised when the LLM rejects the request as malformed (500)."""
     pass
 
 def _clean_json_string(raw_text: str) -> str:
-    """Strip markdown code fences from Gemini output."""
+    """Strip markdown code fences from LLM output."""
     text = raw_text.strip()
     if text.startswith("```json"):
         text = text[len("```json"):]
@@ -53,7 +52,7 @@ def _clean_json_string(raw_text: str) -> str:
     return text.strip()
 
 
-def _call_gemini_and_parse(
+def _call_llm_and_parse(
     system_instruction: str, 
     user_message: str, 
     response_schema: Type[T]
@@ -161,7 +160,7 @@ def generate_critique(resume_data: dict[str, Any]) -> CritiqueResult:
 
     user_message = build_critique_user_message(resume_data)
     
-    result = _call_gemini_and_parse(
+    result = _call_llm_and_parse(
         system_instruction=CRITIQUE_SYSTEM_PROMPT,
         user_message=user_message,
         response_schema=CritiqueResult
@@ -184,7 +183,7 @@ def compute_ats_score(resume_data: dict[str, Any], job_description: Optional[str
 
     user_message = build_ats_user_message(resume_data, job_description)
     
-    result = _call_gemini_and_parse(
+    result = _call_llm_and_parse(
         system_instruction=ATS_SYSTEM_PROMPT,
         user_message=user_message,
         response_schema=ATSResult
@@ -212,7 +211,7 @@ def apply_suggestion(section_name: str, section_data: Any, suggestion: str) -> s
 
     user_message = build_apply_suggestion_user_message(section_name, section_data, suggestion)
     
-    result = _call_gemini_and_parse(
+    result = _call_llm_and_parse(
         system_instruction=APPLY_SUGGESTION_SYSTEM_PROMPT,
         user_message=user_message,
         response_schema=ApplySuggestionResult
@@ -225,6 +224,51 @@ def apply_suggestion(section_name: str, section_data: Any, suggestion: str) -> s
     return result.rewritten_section_json
 
 
+
+
+def generate_text(kind: str, resume_data: dict[str, Any], job_description: Optional[str] = None, context: Any = None) -> str:
+    """
+    Generate a short piece of resume copy ("summary" or "bullet") grounded in the resume data.
+    Unlike critique/ATS, failures here raise rather than fall back to canned text: a made-up
+    summary the user didn't ask for is worse than an error.
+    """
+    from analysis.prompts import GENERATE_SYSTEM_PROMPTS, build_generate_user_message
+
+    if kind not in GENERATE_SYSTEM_PROMPTS:
+        raise ValueError(f"Unknown generation kind: {kind}")
+
+    if is_demo_mode():
+        time.sleep(1)
+        return (
+            "Results-driven professional with a record of delivering measurable outcomes and collaborating across teams."
+            if kind == "summary"
+            else "Led delivery of a key initiative end to end, improving reliability and reducing manual effort for the team."
+        )
+
+    try:
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": GENERATE_SYSTEM_PROMPTS[kind]},
+                {"role": "user", "content": build_generate_user_message(resume_data, job_description, context)},
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.5,
+            max_tokens=300,
+        )
+    except APIError as e:
+        code = getattr(e, "status_code", None)
+        logger.error("Groq error during text generation: %s %s", code, e)
+        if code in (401, 403):
+            raise SafetyError("AI access was denied. Please contact support.")
+        raise TimeoutOrUnavailableError()
+    except Exception as e:
+        logger.error("Unexpected error during text generation: %s", e)
+        raise TimeoutOrUnavailableError()
+
+    text = (response.choices[0].message.content or "").strip().strip('"').lstrip("-•* ").strip() if response.choices else ""
+    if not text:
+        raise TimeoutOrUnavailableError()
+    return text
 
 
 def render_resume_pdf(resume_data: dict, template_id: str, settings: dict = None) -> bytes:
@@ -283,7 +327,7 @@ def parse_resume_pdf_upload(pdf_bytes: bytes) -> dict:
     """
     Extract text from a PDF and use the LLM to parse it into the JSON Resume schema.
     """
-    from resumes.schema import RESUME_SCHEMA, get_empty_resume_document
+    from resumes.schema import RESUME_SCHEMA, normalize_resume_document
 
     # 1. Extract text
     full_text = ""
@@ -366,12 +410,7 @@ def parse_resume_pdf_upload(pdf_bytes: bytes) -> dict:
     try:
         raw_text = response.choices[0].message.content or ""
         cleaned = _clean_json_string(raw_text)
-        parsed = json.loads(cleaned)
-        empty = get_empty_resume_document()
-        for key in empty:
-            if key not in parsed:
-                parsed[key] = empty[key]
-        return parsed
+        return normalize_resume_document(json.loads(cleaned))
     except Exception as e:
         logger.error(f"Failed to parse LLM output during PDF parse: {e}")
         return _fallback_parsed_resume(full_text)

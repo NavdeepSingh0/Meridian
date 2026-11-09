@@ -592,3 +592,36 @@ def build_apply_suggestion_user_message(
         "Return the result as the value of 'rewritten_section_json' — "
         "a raw JSON string matching the original schema exactly."
     )
+
+
+
+# --- Inline text generation (summary / bullet) -------------------------------
+
+GENERATE_SYSTEM_PROMPTS = {
+    "summary": (
+        "You write professional resume summaries. Using ONLY facts present in the candidate's resume "
+        "data, write a 2-4 sentence first-person-implied summary (no pronouns like 'I'). "
+        "If a job description is provided, emphasise the most relevant strengths for it. "
+        "Never invent employers, titles, numbers or skills. Output plain text only - no markdown, "
+        "quotes, headings or preamble."
+    ),
+    "bullet": (
+        "You write resume achievement bullets. Given a job entry and the candidate's resume data, write "
+        "ONE concise bullet (max 28 words) starting with a strong past-tense action verb, focused on impact. "
+        "If FOCUS ENTRY includes an existing_bullet, improve and rewrite THAT bullet (keep its facts) instead of "
+        "inventing a new one. Only use a number or percentage if it appears in the provided data; otherwise describe the "
+        "outcome qualitatively. Never invent facts. Output the bullet text only - no dash, bullet "
+        "character, quotes or preamble."
+    ),
+}
+
+
+def build_generate_user_message(resume_data: dict, job_description: str | None, context=None) -> str:
+    import json
+
+    parts = ["RESUME DATA:\n" + json.dumps(resume_data, indent=2)[:6000]]
+    if context:
+        parts.append("FOCUS ENTRY:\n" + json.dumps(context, indent=2)[:2000])
+    if job_description and job_description.strip():
+        parts.append("JOB DESCRIPTION:\n" + job_description.strip()[:4000])
+    return "\n\n".join(parts)

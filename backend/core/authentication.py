@@ -1,88 +1,84 @@
+import json
+import logging
+import os
+
 import firebase_admin
-from firebase_admin import auth, credentials
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from rest_framework import authentication
-from rest_framework import exceptions
+from firebase_admin import auth, credentials
+from rest_framework import authentication, exceptions
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-import os
-import json
 
-# Initialize Firebase Admin App
-if not firebase_admin._apps:
+def init_firebase() -> None:
+    """
+    Initialise the Firebase Admin SDK once, on first use.
+
+    Done lazily (not at import time) so that management commands, tests and
+    tooling can import this module without credentials being present. If
+    credentials are missing, the first authenticated request fails loudly.
+    """
+    if firebase_admin._apps:
+        return
+
     cred_json = os.environ.get("FIREBASE_CREDENTIALS")
-    if cred_json:
-        try:
-            cert = json.loads(cred_json)
-            cred = credentials.Certificate(cert)
-            firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized from FIREBASE_CREDENTIALS env var.")
-        except Exception as e:
-            # Raise so the deployment fails loudly instead of silently serving broken auth
-            raise RuntimeError(f"Failed to initialize Firebase Admin SDK from FIREBASE_CREDENTIALS: {e}") from e
-    else:
-        # Fallback to local JSON file for development
-        try:
+    try:
+        if cred_json:
+            cred = credentials.Certificate(json.loads(cred_json))
+            source = "FIREBASE_CREDENTIALS env var"
+        else:
             cred = credentials.Certificate("firebase-credentials.json")
-            firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized from firebase-credentials.json file.")
-        except Exception as e:
-            raise RuntimeError(
-                "Firebase Admin SDK could not be initialized. "
-                "Set the FIREBASE_CREDENTIALS environment variable in production, "
-                f"or ensure firebase-credentials.json exists locally. Error: {e}"
-            ) from e
+            source = "firebase-credentials.json"
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialised from %s.", source)
+    except Exception as e:
+        raise RuntimeError(
+            "Firebase Admin SDK could not be initialised. Set FIREBASE_CREDENTIALS in "
+            "production, or provide firebase-credentials.json locally."
+        ) from e
+
 
 class FirebaseAuthentication(authentication.BaseAuthentication):
     """
-    Custom authentication class for Django Rest Framework that verifies
-    JWTs issued by Firebase Auth.
+    DRF authentication class that verifies JWTs issued by Firebase Auth.
     """
-    keyword = 'Bearer'
+
+    keyword = "Bearer"
 
     def authenticate(self, request):
-        auth_header = request.headers.get('Authorization')
-        
+        auth_header = request.headers.get("Authorization")
         if not auth_header:
             return None
 
-        auth_parts = auth_header.split()
-        if len(auth_parts) != 2 or auth_parts[0] != self.keyword:
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0] != self.keyword:
             return None
 
-        token = auth_parts[1]
+        init_firebase()
 
         try:
-            # Add clock_skew_seconds to handle local clock drift
-            decoded_token = auth.verify_id_token(token, clock_skew_seconds=10)
-        except auth.ExpiredIdTokenError as e:
-            print(f"[AUTH] ExpiredIdTokenError: {e}")
-            raise exceptions.AuthenticationFailed(f'Token expired: {str(e)}')
-        except auth.RevokedIdTokenError as e:
-            print(f"[AUTH] RevokedIdTokenError: {e}")
-            raise exceptions.AuthenticationFailed(f'Token revoked: {str(e)}')
-        except auth.InvalidIdTokenError as e:
-            print(f"[AUTH] InvalidIdTokenError type={type(e).__name__}: {e}")
-            raise exceptions.AuthenticationFailed(f'Token invalid ({type(e).__name__}): {str(e)}')
+            decoded = auth.verify_id_token(parts[1], clock_skew_seconds=10)
+        except auth.ExpiredIdTokenError:
+            raise exceptions.AuthenticationFailed("Your session has expired. Please sign in again.")
+        except auth.RevokedIdTokenError:
+            raise exceptions.AuthenticationFailed("Your session was revoked. Please sign in again.")
         except Exception as e:
-            print(f"[AUTH] Unexpected error type={type(e).__name__}: {e}")
-            raise exceptions.AuthenticationFailed(f'Auth error ({type(e).__name__}): {str(e)}')
+            # Log the detail server-side; never echo verifier internals to the client.
+            logger.warning("Firebase token rejected (%s): %s", type(e).__name__, e)
+            raise exceptions.AuthenticationFailed("Invalid authentication token.")
 
-        # Extract the user's UID and email from the Firebase token
-        uid = decoded_token.get('uid')
-        email = decoded_token.get('email', '')
-
+        uid = decoded.get("uid")
         if not uid:
-            raise exceptions.AuthenticationFailed('Token contains no user identifier.')
+            raise exceptions.AuthenticationFailed("Token contains no user identifier.")
 
-        # Get or create the Django User based on the Firebase UID (which we map to the username)
-        user, created = User.objects.get_or_create(
+        user, _ = User.objects.get_or_create(
             username=uid,
-            defaults={
-                'email': email,
-            }
+            defaults={"email": decoded.get("email", "")},
         )
+        return (user, parts[1])
 
-        return (user, token)
+    def authenticate_header(self, request):
+        # Makes DRF return 401 (not 403) for missing/invalid credentials.
+        return self.keyword

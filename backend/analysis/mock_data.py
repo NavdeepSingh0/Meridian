@@ -51,7 +51,9 @@ def get_mock_critique() -> CritiqueResult:
 def get_mock_ats_result(has_job_description: bool = False) -> ATSResult:
     """Return a realistic mocked ATSResult, optionally with keyword gaps."""
     missing = []
+    matched = []
     if has_job_description:
+        matched = ["Python", "Django", "REST APIs", "Git"]
         missing = [
             KeywordGap(keyword="React.js", importance="High"),
             KeywordGap(keyword="PostgreSQL", importance="Medium"),
@@ -81,6 +83,7 @@ def get_mock_ats_result(has_job_description: bool = False) -> ATSResult:
             "Section headers are slightly unconventional; stick to 'Experience', 'Education', 'Skills'."
         ],
         has_job_description=has_job_description,
+        matched_keywords=matched,
         missing_keywords=missing
     )
 

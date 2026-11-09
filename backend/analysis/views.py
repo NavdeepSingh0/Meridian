@@ -3,44 +3,86 @@ API Views for the analysis app.
 
 These endpoints receive JSON payloads, validate the resume structure,
 call the service layer, and serialize the resulting Pydantic models to JSON.
-"""
-import jsonschema
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from resumes.schema import validate_resume_document
+Credit model: one credit is reserved *before* the (expensive) AI call and
+refunded if the call fails, so users are never charged for a failed request
+and never get a free AI call by racing the deduction.
+"""
+import logging
+from contextlib import contextmanager
+
+import jsonschema
+from django.db import transaction
+from django.http import HttpResponse
+from rest_framework import status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+
 from analysis import services
 from core.models import Profile
-from django.db import transaction
+from resumes.schema import validate_resume_document
 
-def _check_and_deduct_credits(user):
+logger = logging.getLogger(__name__)
+
+MAX_PDF_BYTES = 5 * 1024 * 1024  # 5 MB — matches the frontend dropzone limit
+PDF_MAGIC = b"%PDF-"
+VALID_TEMPLATES = ("classic", "modern", "minimal")
+
+
+class OutOfCreditsError(Exception):
+    """Raised when a non-premium user has no AI credits left."""
+
+
+def _has_unlimited_credits(profile: Profile) -> bool:
+    return profile.is_admin or profile.is_premium
+
+
+def _reserve_credit(user) -> bool:
     """
-    Checks if the user has enough credits or is premium/admin.
-    If so, deducts 1 credit and returns True.
-    If not, raises an Exception to be handled by the view.
+    Atomically take one credit. Returns True if a credit was taken (and so
+    must be refunded on failure), False for premium/admin users.
+    Raises OutOfCreditsError when the balance is zero.
     """
-    if not user or not user.is_authenticated:
-        raise PermissionError("You must be logged in to use AI analysis.")
-        
     profile, _ = Profile.objects.get_or_create(user=user)
-    
-    if profile.is_admin or profile.is_premium:
-        return True
-        
+    if _has_unlimited_credits(profile):
+        return False
+
     with transaction.atomic():
-        profile = Profile.objects.select_for_update().get(id=profile.id)
-        if profile.ai_credits > 0:
-            profile.ai_credits -= 1
-            profile.save(update_fields=["ai_credits"])
-            return True
-            
-    raise ValueError("You have run out of AI credits. Please upgrade your plan.")
+        locked = Profile.objects.select_for_update().get(pk=profile.pk)
+        if locked.ai_credits <= 0:
+            raise OutOfCreditsError("You have run out of AI credits. Please upgrade your plan.")
+        locked.ai_credits -= 1
+        locked.save(update_fields=["ai_credits"])
+    return True
 
 
-def _handle_service_errors(exc: Exception) -> Response | None:
-    """Helper to translate service layer exceptions into HTTP responses."""
+def _refund_credit(user) -> None:
+    with transaction.atomic():
+        locked = Profile.objects.select_for_update().get(user=user)
+        locked.ai_credits += 1
+        locked.save(update_fields=["ai_credits"])
+
+
+@contextmanager
+def credit_charged(user):
+    """Reserve a credit for the duration of the block; refund it if the block raises."""
+    charged = _reserve_credit(user)
+    try:
+        yield
+    except BaseException:
+        if charged:
+            _refund_credit(user)
+        raise
+
+
+def _out_of_credits_response(exc: OutOfCreditsError) -> Response:
+    return Response({"error": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+
+
+def _service_error_response(exc: Exception) -> Response | None:
+    """Translate service-layer exceptions into HTTP responses."""
     if isinstance(exc, services.SafetyError):
         return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     if isinstance(exc, services.TimeoutOrUnavailableError):
@@ -56,7 +98,22 @@ def _handle_service_errors(exc: Exception) -> Response | None:
     return None
 
 
-class CritiqueView(APIView):
+def _schema_error_response(exc: jsonschema.ValidationError) -> Response:
+    path = " → ".join(str(p) for p in exc.absolute_path) if exc.absolute_path else "root"
+    return Response(
+        {"error": f"Schema validation failed at '{path}': {exc.message}"},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+class AIView(APIView):
+    """Base for endpoints that cost AI credits: authenticated + rate limited."""
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai"
+
+
+class CritiqueView(AIView):
     """
     POST /api/analysis/critique/
     Body: { "resume_data": {...} }
@@ -68,34 +125,25 @@ class CritiqueView(APIView):
             return Response({"error": "resume_data is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            _check_and_deduct_credits(request.user)
-        except PermissionError as e:
-            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        # Validate structure before sending to AI
-        try:
             validate_resume_document(resume_data)
         except jsonschema.ValidationError as exc:
-            path = " → ".join(str(p) for p in exc.absolute_path) if exc.absolute_path else "root"
-            return Response(
-                {"error": f"Schema validation failed at '{path}': {exc.message}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return _schema_error_response(exc)
 
         try:
-            result = services.generate_critique(resume_data)
+            with credit_charged(request.user):
+                result = services.generate_critique(resume_data)
+        except OutOfCreditsError as exc:
+            return _out_of_credits_response(exc)
         except Exception as exc:
-            err_response = _handle_service_errors(exc)
-            if err_response:
-                return err_response
-            raise  # Unhandled exception, let Django return 500
-        
+            response = _service_error_response(exc)
+            if response:
+                return response
+            raise
+
         return Response(result.model_dump(), status=status.HTTP_200_OK)
 
 
-class ATSScoreView(APIView):
+class ATSScoreView(AIView):
     """
     POST /api/analysis/ats-score/
     Body: { "resume_data": {...}, "job_description": "..." (optional) }
@@ -108,36 +156,28 @@ class ATSScoreView(APIView):
             return Response({"error": "resume_data is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            _check_and_deduct_credits(request.user)
-        except PermissionError as e:
-            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        try:
             validate_resume_document(resume_data)
         except jsonschema.ValidationError as exc:
-            path = " → ".join(str(p) for p in exc.absolute_path) if exc.absolute_path else "root"
-            return Response(
-                {"error": f"Schema validation failed at '{path}': {exc.message}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return _schema_error_response(exc)
 
-        # Treat empty string as None
+        # Treat empty/whitespace string as "no job description"
         jd = job_description if str(job_description).strip() else None
 
         try:
-            result = services.compute_ats_score(resume_data, jd)
+            with credit_charged(request.user):
+                result = services.compute_ats_score(resume_data, jd)
+        except OutOfCreditsError as exc:
+            return _out_of_credits_response(exc)
         except Exception as exc:
-            err_response = _handle_service_errors(exc)
-            if err_response:
-                return err_response
+            response = _service_error_response(exc)
+            if response:
+                return response
             raise
 
         return Response(result.model_dump(), status=status.HTTP_200_OK)
 
 
-class ApplySuggestionView(APIView):
+class ApplySuggestionView(AIView):
     """
     POST /api/analysis/apply-suggestion/
     Body: { "section_name": "...", "section_data": ..., "suggestion": "..." }
@@ -147,96 +187,140 @@ class ApplySuggestionView(APIView):
         section_name = request.data.get("section_name")
         section_data = request.data.get("section_data")
         suggestion = request.data.get("suggestion")
-        
+
         if not section_name or section_data is None or not suggestion:
-            return Response({"error": "section_name, section_data, and suggestion are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "section_name, section_data, and suggestion are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
-            # Returns a raw JSON string
-            rewritten_json_str = services.apply_suggestion(section_name, section_data, suggestion)
-            _check_and_deduct_credits(request.user)
-            return Response({"rewritten_section_json": rewritten_json_str}, status=status.HTTP_200_OK)
-        except PermissionError as e:
-            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+            with credit_charged(request.user):
+                rewritten_json_str = services.apply_suggestion(section_name, section_data, suggestion)
+        except OutOfCreditsError as exc:
+            return _out_of_credits_response(exc)
         except Exception as exc:
-            err_response = _handle_service_errors(exc)
-            if err_response:
-                return err_response
+            response = _service_error_response(exc)
+            if response:
+                return response
             raise
 
+        return Response({"rewritten_section_json": rewritten_json_str}, status=status.HTTP_200_OK)
 
-from rest_framework.permissions import IsAuthenticated
+
+class GenerateTextView(AIView):
+    """
+    POST /api/analysis/generate/
+    Body: { "kind": "summary"|"bullet", "resume_data": {...}, "job_description": "...", "context": {...} }
+    Returns: { "text": "..." }
+    """
+
+    def post(self, request, *args, **kwargs):
+        kind = request.data.get("kind")
+        resume_data = request.data.get("resume_data")
+        job_description = request.data.get("job_description") or ""
+        context = request.data.get("context")
+
+        if kind not in ("summary", "bullet"):
+            return Response({"error": "kind must be 'summary' or 'bullet'."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(resume_data, dict):
+            return Response({"error": "resume_data is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_resume_document(resume_data)
+        except jsonschema.ValidationError as exc:
+            return _schema_error_response(exc)
+
+        try:
+            with credit_charged(request.user):
+                text = services.generate_text(kind, resume_data, job_description, context)
+        except OutOfCreditsError as exc:
+            return _out_of_credits_response(exc)
+        except Exception as exc:
+            response = _service_error_response(exc)
+            if response:
+                return response
+            raise
+
+        return Response({"text": text}, status=status.HTTP_200_OK)
+
 
 class ExportPDFView(APIView):
     """
     POST /api/analysis/export-pdf/
     Body: { "resume_data": {...}, "template_id": "classic|modern|minimal" }
     """
-    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         resume_data = request.data.get("resume_data")
         template_id = request.data.get("template_id")
-        settings = request.data.get("settings", {"font_size": 10, "document_margin": 1})
-        
+        settings = request.data.get("settings") or {"font_size": 10, "document_margin": 1}
+
         if not resume_data or not isinstance(resume_data, dict):
             return Response({"detail": "Invalid or missing resume_data"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if not template_id or template_id not in ["classic", "modern", "minimal"]:
-            return Response({"detail": "Invalid or missing template_id. Must be one of 'classic', 'modern', 'minimal'."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
+        if template_id not in VALID_TEMPLATES:
+            return Response(
+                {"detail": f"Invalid or missing template_id. Must be one of {', '.join(VALID_TEMPLATES)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             validate_resume_document(resume_data)
         except jsonschema.ValidationError as e:
             return Response({"detail": f"Schema validation failed: {e.message}"}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         try:
-            from analysis.services import render_resume_pdf
-            pdf_bytes = render_resume_pdf(resume_data, template_id, settings)
-            
-            # Use Django's HttpResponse to send bytes natively
-            from django.http import HttpResponse
-            response = HttpResponse(pdf_bytes, content_type='application/pdf')
-            # Use a safe filename from the resume
-            name = resume_data.get("basics", {}).get("name", "resume").replace(" ", "_")
-            response['Content-Disposition'] = f'attachment; filename="{name}.pdf"'
-            return response
-            
+            pdf_bytes = services.render_resume_pdf(resume_data, template_id, settings)
         except NotImplementedError as e:
             return Response({"detail": str(e)}, status=status.HTTP_501_NOT_IMPLEMENTED)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return Response({"detail": f"An error occurred while generating the PDF: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            logger.exception("PDF export failed")
+            return Response(
+                {"detail": "We couldn't generate the PDF. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # Build a header-safe filename from the resume name
+        raw_name = (resume_data.get("basics") or {}).get("name") or "resume"
+        safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in raw_name.strip()) or "resume"
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{safe_name}.pdf"'
+        return response
 
 
-class ParsePDFView(APIView):
+class ParsePDFView(AIView):
     """
     POST /api/analysis/parse-pdf/
     Accepts: multipart/form-data with a 'file' field containing a PDF.
     Returns: { "resume_data": {...} } parsed from the PDF.
     """
+
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request, *args, **kwargs):
-        from analysis.services import parse_resume_pdf_upload, ScannedPDFError
+        upload = request.FILES.get("file")
+        if upload is None:
+            return Response({"detail": "A PDF file is required (field name: 'file')."}, status=status.HTTP_400_BAD_REQUEST)
+        if upload.size > MAX_PDF_BYTES:
+            return Response({"detail": "PDF is too large. The maximum size is 5 MB."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+        pdf_bytes = upload.read()
+        if not pdf_bytes.startswith(PDF_MAGIC):
+            return Response({"detail": "That file doesn't look like a PDF."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            resume_data = parse_resume_pdf_upload(pdf_bytes)
-            _check_and_deduct_credits(request.user)
-            return Response({"resume_data": resume_data}, status=status.HTTP_200_OK)
-        except PermissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        except ScannedPDFError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
+            with credit_charged(request.user):
+                resume_data = services.parse_resume_pdf_upload(pdf_bytes)
+        except OutOfCreditsError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+        except services.ScannedPDFError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception:
+            logger.exception("PDF parse failed")
             return Response(
-                {"detail": f"An error occurred while parsing the PDF: {str(e)}"},
+                {"detail": "We couldn't read that PDF. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        return Response({"resume_data": resume_data}, status=status.HTTP_200_OK)

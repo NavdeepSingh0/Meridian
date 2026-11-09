@@ -193,3 +193,64 @@ def validate_resume_document(data: Any) -> None:
     import jsonschema
 
     jsonschema.validate(instance=data, schema=RESUME_SCHEMA)
+
+
+def _coerce(value: Any, schema: dict[str, Any]) -> Any:
+    """Best-effort coercion of `value` to match `schema` (see normalize_resume_document)."""
+    kind = schema.get("type")
+
+    if kind == "object":
+        props = schema.get("properties", {})
+        source = value if isinstance(value, dict) else {}
+        out: dict[str, Any] = {}
+        for key, item in source.items():
+            if key in props:
+                out[key] = _coerce(item, props[key])
+            elif schema.get("additionalProperties") is not False:
+                out[key] = item  # tolerate extra fields (e.g. work[].location)
+        return out
+
+    if kind == "array":
+        items_schema = schema.get("items")
+        source = value if isinstance(value, list) else []
+        if not items_schema:
+            return source
+        if items_schema.get("type") == "object":
+            # Drop entries that are not objects at all (e.g. a stray string in `work`).
+            source = [v for v in source if isinstance(v, dict)]
+        return [_coerce(v, items_schema) for v in source]
+
+    if kind == "string":
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (list, tuple)):
+            return ", ".join(str(v) for v in value if v is not None)
+        return str(value)
+
+    return value
+
+
+def normalize_resume_document(data: Any) -> dict[str, Any]:
+    """
+    Coerce an untrusted/LLM-produced resume dict into a schema-valid document.
+
+    LLMs routinely return `null` for missing strings, numbers for years, or omit
+    keys entirely. Rather than reject the whole resume, this fills missing
+    top-level keys, turns null/non-string scalars into strings, drops unknown
+    top-level keys and non-object list entries, and guarantees the result passes
+    `validate_resume_document`.
+    """
+    result = _coerce(data if isinstance(data, dict) else {}, RESUME_SCHEMA)
+    empty = get_empty_resume_document()
+
+    for key in RESUME_SCHEMA["required"]:
+        if key not in result:
+            result[key] = empty[key]
+
+    # `basics` must at least have a name, and keep the full shape the editor expects.
+    basics = {**empty["basics"], **result["basics"]}
+    basics["location"] = {**empty["basics"]["location"], **(basics.get("location") or {})}
+    result["basics"] = basics
+    return result

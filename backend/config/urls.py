@@ -2,17 +2,23 @@
 URL configuration for the Meridian API backend.
 """
 import firebase_admin
-from django.urls import path, include
 from django.http import JsonResponse
+from django.urls import include, path
+
+from core.authentication import init_firebase
+
 
 def healthz(request):
-    """Public health check — confirms Firebase init status and code version."""
-    firebase_ok = bool(firebase_admin._apps)
+    """Public health check — confirms Firebase is initialised."""
+    try:
+        init_firebase()
+    except RuntimeError:
+        pass
     return JsonResponse({
         "status": "ok",
-        "firebase_initialized": firebase_ok,
-        "version": "2026-06-24-v3",  # bump this on each deploy to confirm code is fresh
+        "firebase_initialized": bool(firebase_admin._apps),
     })
+
 
 urlpatterns = [
     path("healthz", healthz),

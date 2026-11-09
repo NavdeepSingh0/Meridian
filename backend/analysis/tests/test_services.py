@@ -1,86 +1,84 @@
-import pytest
+"""Service-layer tests for the Groq pipeline (client is mocked; no network)."""
 import json
 from unittest.mock import MagicMock
 
-from google.genai.errors import APIError
-from pydantic import ValidationError
+import pytest
+from groq import APIError
 
 from analysis import services
 from analysis.schemas import CritiqueResult
 from resumes.schema import get_empty_resume_document
 
+VALID_CRITIQUE = {
+    "overall_score": 85,
+    "overall_feedback": "Great resume.",
+    "sections": [
+        {"section": "work", "score": 80, "strengths": ["Good"], "improvements": ["More detail"]}
+    ],
+}
+
+
 @pytest.fixture
 def empty_resume():
     return get_empty_resume_document()
 
-@pytest.fixture
-def mock_genai_client(mocker):
-    # Mock the `client` in analysis.services
-    mock_client = MagicMock()
-    mocker.patch("analysis.services.client", mock_client)
-    # Also mock is_demo_mode to be False so we actually test the pipeline
-    mocker.patch("analysis.services.is_demo_mode", return_value=False)
-    return mock_client
 
-def test_gemini_success(mock_genai_client, empty_resume):
-    # Setup mock response
-    mock_response = MagicMock()
-    mock_candidate = MagicMock()
-    mock_candidate.finish_reason = "STOP"
-    mock_response.candidates = [mock_candidate]
-    
-    valid_json = {
-        "overall_score": 85,
-        "overall_feedback": "Great resume.",
-        "sections": [
-            {
-                "section": "work",
-                "score": 80,
-                "strengths": ["Good"],
-                "improvements": ["More detail"]
-            }
-        ]
-    }
-    mock_response.text = f"```json\n{json.dumps(valid_json)}\n```"
-    mock_genai_client.models.generate_content.return_value = mock_response
-    
+@pytest.fixture
+def groq(mocker):
+    client = MagicMock()
+    mocker.patch("analysis.services.client", client)
+    mocker.patch("analysis.services.is_demo_mode", return_value=False)
+    mocker.patch("analysis.services.time.sleep")  # don't actually back off
+    return client
+
+
+def llm_response(content, finish_reason="stop"):
+    response = MagicMock()
+    response.choices = [MagicMock(finish_reason=finish_reason, message=MagicMock(content=content))]
+    return response
+
+
+def api_error(code):
+    err = APIError("boom", request=MagicMock(), body=None)
+    err.status_code = code
+    return err
+
+
+def test_success_parses_fenced_json(groq, empty_resume):
+    groq.chat.completions.create.return_value = llm_response(f"```json\n{json.dumps(VALID_CRITIQUE)}\n```")
     result = services.generate_critique(empty_resume)
-    
     assert isinstance(result, CritiqueResult)
     assert result.overall_score == 85
-    assert len(result.sections) == 1
 
-def test_gemini_safety_block(mock_genai_client, empty_resume):
-    mock_response = MagicMock()
-    mock_candidate = MagicMock()
-    mock_candidate.finish_reason = "SAFETY"
-    mock_response.candidates = [mock_candidate]
-    mock_genai_client.models.generate_content.return_value = mock_response
-    
+
+def test_content_filter_raises_safety_error(groq, empty_resume):
+    groq.chat.completions.create.return_value = llm_response("x", finish_reason="content_filter")
     with pytest.raises(services.SafetyError):
         services.generate_critique(empty_resume)
 
-def test_gemini_429_fallback(mock_genai_client, empty_resume):
-    # Simulate a 429 rate limit error
-    error = APIError("Rate limited", response=MagicMock())
-    error.code = 429
-    mock_genai_client.models.generate_content.side_effect = error
-    
-    result = services.generate_critique(empty_resume)
-    # Should fallback to mock data
-    assert isinstance(result, CritiqueResult)
-    # Assuming mock data score is 78
-    assert result.overall_score == 78
 
-def test_gemini_parse_failure_fallback(mock_genai_client, empty_resume):
-    mock_response = MagicMock()
-    mock_candidate = MagicMock()
-    mock_candidate.finish_reason = "STOP"
-    mock_response.candidates = [mock_candidate]
-    mock_response.text = "This is not JSON at all."
-    mock_genai_client.models.generate_content.return_value = mock_response
-    
-    result = services.generate_critique(empty_resume)
-    # Should fallback to mock data
-    assert isinstance(result, CritiqueResult)
-    assert result.overall_score == 78
+def test_non_json_output_falls_back_to_mock(groq, empty_resume):
+    groq.chat.completions.create.return_value = llm_response("This is not JSON at all.")
+    assert services.generate_critique(empty_resume).overall_score == 78
+
+
+def test_rate_limit_retries_then_succeeds(groq, empty_resume):
+    groq.chat.completions.create.side_effect = [
+        api_error(429),
+        llm_response(json.dumps(VALID_CRITIQUE)),
+    ]
+    assert services.generate_critique(empty_resume).overall_score == 85
+    assert groq.chat.completions.create.call_count == 2
+
+
+def test_persistent_rate_limit_raises_unavailable(groq, empty_resume):
+    groq.chat.completions.create.side_effect = api_error(429)
+    with pytest.raises(services.TimeoutOrUnavailableError):
+        services.generate_critique(empty_resume)
+    assert groq.chat.completions.create.call_count == 3
+
+
+def test_bad_request_raises_bad_request_error(groq, empty_resume):
+    groq.chat.completions.create.side_effect = api_error(400)
+    with pytest.raises(services.BadRequestError):
+        services.generate_critique(empty_resume)

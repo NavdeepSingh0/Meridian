@@ -9,7 +9,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
-    GEMINI_API_KEY=(str, ""),
     GROQ_API_KEY=(str, ""),
 )
 
@@ -22,7 +21,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 DEBUG = env("DJANGO_DEBUG")
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["*"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # Application definition
 INSTALLED_APPS = [
@@ -46,8 +45,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+# CORS policy is set per environment (dev.py / prod.py).
 
 ROOT_URLCONF = "config.urls"
 
@@ -80,9 +78,6 @@ STATIC_URL = "/static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Sessions (used for session_key-scoped resume ownership)
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
-
 # REST Framework defaults
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
@@ -93,11 +88,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Per-view scoped throttles (see analysis.views.AIView).
+    "DEFAULT_THROTTLE_RATES": {
+        "ai": env("AI_THROTTLE_RATE", default="20/min"),
+    },
 }
 
+# Reject oversized request bodies early (PDF uploads are further capped at 5 MB in the view).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 
 
-# Gemini API key — read from environment. Empty string = Demo Mode.
-GEMINI_API_KEY: str = env("GEMINI_API_KEY")
+
+# Groq API key — read from environment. Empty string = Demo Mode.
 GROQ_API_KEY: str = env("GROQ_API_KEY")
-# Trigger auto-reloader to pick up the new .env file
