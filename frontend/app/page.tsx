@@ -1,31 +1,22 @@
-import Navbar from '@/components/landing/Navbar';
-import HeroSection from '@/components/landing/HeroSection';
-import StatsStrip from '@/components/landing/StatsStrip';
-import FeaturesSection from '@/components/landing/FeaturesSection';
-import HowItWorks from '@/components/landing/HowItWorks';
-import TemplateShowcase from '@/components/landing/TemplateShowcase';
-import ATSSection from '@/components/landing/ATSSection';
-import CTASection from '@/components/landing/CTASection';
-import Footer from '@/components/landing/Footer';
-import WindingLineMap from '@/components/landing/WindingLineMap';
+import LandingNav from '@/components/landing/LandingNav';
+import Hero from '@/components/landing/Hero';
+import Journey from '@/components/landing/Journey';
+import FinalCta from '@/components/landing/FinalCta';
+import LandingFooter from '@/components/landing/LandingFooter';
+import FlightPath from '@/components/landing/flight/FlightPath';
+import styles from '@/components/landing/landing.module.css';
 
 export default function LandingPage() {
   return (
-    <>
-      <Navbar />
-      <main className="relative">
-        <div className="hidden md:block">
-          <WindingLineMap />
-        </div>
-        <HeroSection />
-        <StatsStrip />
-        <FeaturesSection />
-        <HowItWorks />
-        <TemplateShowcase />
-        <ATSSection />
-        <CTASection />
+    <div className={styles.page}>
+      <LandingNav />
+      <main className={styles.main}>
+        <FlightPath />
+        <Hero />
+        <Journey />
+        <FinalCta />
       </main>
-      <Footer />
-    </>
+      <LandingFooter />
+    </div>
   );
 }
